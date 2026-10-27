@@ -69,25 +69,6 @@ export default [
     },
   },
   {
-    commands: ['perfil', 'profile'],
-    category: 'general',
-    description: 'Muestra tu actividad y rol.',
-    needsGroupMetadata: true,
-    async execute(ctx) {
-      const user = ctx.db.data.users[ctx.m.senderDisplay || ctx.m.sender]
-      const role = ctx.isOwner ? 'Propietario' : ctx.isAdmin ? 'Administrador' : 'Usuario'
-      await ctx.reply(`☾ *PERFIL DE @${ctx.m.senderDisplay.split('@')[0]}*
-
-> Nombre: ${ctx.m.name}
-> Rol: ${role}
-> Mensajes: ${user?.messages || 0}
-> Comandos: ${user?.commands || 0}
-> ID: ${ctx.m.sender}`, {
-        contextInfo: { mentionedJid: [ctx.m.sender] },
-      })
-    },
-  },
-  {
     commands: ['id', 'myid'],
     category: 'general',
     description: 'Muestra tus identificadores de WhatsApp.',

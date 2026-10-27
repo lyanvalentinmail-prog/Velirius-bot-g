@@ -11,10 +11,11 @@ Incluye vinculación por **código QR** o **código de emparejamiento**, menú c
 - Asistente de configuración para Termux: `npm run setup`.
 - Permisos compatibles con números normales (`PN`) e identificadores `@lid`.
 - Menú generado automáticamente desde los plugins cargados.
-- 135 comandos y 256 claves/alias, organizados en 12 categorías.
-- Descargas, búsquedas, anime, 19 canvas, 16 efectos, herramientas y 26 reacciones.
-- 14 generadores de stickers y 4 editores locales con metadata personalizable.
-- Base de datos JSON local para actividad, estadísticas y packs de stickers.
+- 166 comandos y 339 claves/alias, organizados en 16 categorías.
+- Descargas, búsquedas, anime, Pokémon, 19 canvas, 16 efectos, herramientas y 26 reacciones.
+- Gacha de personajes, harem, regalos, tienda, economía, bancos y perfiles RPG persistentes.
+- 14 generadores de stickers, 4 editores locales y paquetes de hasta 60 stickers.
+- Base de datos JSON local para actividad, monedas, perfiles y colecciones de Pokémon/personajes.
 - Cooldown, modo público/privado y límite de tamaño para descargas.
 - Reconexión automática y script con reinicio del proceso.
 - Sin token para Velirius API.
@@ -30,7 +31,7 @@ cd Velirius-bot-g
 bash scripts/install-termux.sh
 ```
 
-El instalador ejecuta `pkg update`, instala Node.js, Git, Nano y FFmpeg, instala las dependencias con `npm ci` y comprueba el soporte de imágenes de Baileys. En Android, si `sharp` no tiene binario nativo, se prepara automáticamente su variante WebAssembly. FFmpeg es necesario para stickers animados y conversiones de video.
+El instalador ejecuta `pkg update`, instala Node.js, Git, Nano y FFmpeg, instala las dependencias con `npm ci` y comprueba el soporte de imágenes de Baileys. En Android, si `sharp` no tiene binario nativo, se prepara automáticamente su variante WebAssembly. FFmpeg es necesario para stickers animados, reacciones GIF y conversiones de video.
 
 ### Instalación manual completa
 
@@ -168,7 +169,7 @@ El modo predeterminado es `interactive`: envía banner y un botón de selección
 - `list`: mensaje `listMessage` clásico.
 - `text`: banner y comandos en texto, sin elementos interactivos.
 
-Los dos modos de lista incorporan los nodos `biz` requeridos por WhatsApp. Las 12 categorías se reparten en secciones de máximo 10 filas para respetar los límites de WhatsApp. Al seleccionar una categoría, el bot interpreta su ID y devuelve los comandos correspondientes.
+Los dos modos de lista incorporan los nodos `biz` requeridos por WhatsApp. Las 16 categorías se reparten en secciones de máximo 10 filas para respetar los límites de WhatsApp. Al seleccionar una categoría, el bot interpreta su ID y devuelve los comandos correspondientes.
 
 La visualización final depende de la versión de WhatsApp. Si una lista no aparece en un cliente, el bot intenta otras formas de envío; también puedes forzar `.setmenu texto`.
 
@@ -184,7 +185,6 @@ El menú completo se obtiene con `.menu` (o con el prefijo que hayas configurado
 .ping
 .infobot
 .estadoapi
-.perfil
 .owner
 .id
 ```
@@ -249,14 +249,18 @@ Para `.stt en`, responde a un audio o nota de voz; el idioma es opcional y por d
 ### Stickers editor
 
 ```text
-.pack Mi Pack | Lyann
+.pack Mi Pack,Lyann
+.pack add
+.pack done
+.pack cancel
 .sticker
 .toimg
 .tovid
-.pack reset
 ```
 
-Responde a una imagen o video corto con `.sticker`, y a un sticker con `.toimg` o `.tovid`. La metadata de `.pack` se guarda por usuario y se aplica también a los stickers creados con la API. Las conversiones de video usan FFmpeg.
+Para crear un paquete, inicia con `.pack nombre,autor` y agrega cada foto con `.pack add`, respondiendo a la imagen o enviándola con ese texto. `.pack done` sube y envía directamente un paquete de WhatsApp con portada (hasta 60 stickers), no stickers sueltos; `.pack cancel` descarta la recopilación. Las sesiones son temporales, independientes por chat y usuario, y se mantienen sólo en memoria.
+
+Responde a una imagen o video corto con `.sticker`, y a un sticker con `.toimg` o `.tovid`. Las conversiones de video usan FFmpeg.
 
 ### Canvas y effects
 
@@ -292,8 +296,6 @@ Los 16 efectos son `gay`, `invert`, `grayscale`, `blur`, `pixel`, `deepfry`, `sk
 .neko
 .waifu
 .maid
-.pokemon pikachu
-.pokemon charizard shiny
 .hug @usuario
 .kiss @usuario
 .pat @usuario
@@ -301,7 +303,76 @@ Los 16 efectos son `gay`, `invert`, `grayscale`, `blur`, `pixel`, `deepfry`, `sk
 .laugh
 ```
 
-Las 26 reacciones usan las rutas `/reactions/:reaction` de Velirius API y contenido SFW.
+Las 26 reacciones están dentro de la categoría Anime y usan `/reactions/:reaction` de Velirius API con contenido SFW. Los GIF se convierten a MP4 silencioso con `gifPlayback` para que WhatsApp los reproduzca como GIF.
+
+### Pokémon
+
+```text
+.catch
+.pokedex
+.pokedex pikachu
+.pokedex charizard shiny
+.pokemonbattle @usuario
+```
+
+`.catch` intenta atrapar un Pokémon aleatorio y guarda la colección por usuario. `.pokedex` sin argumentos muestra esa colección; con un nombre o ID consulta sus datos, y conserva `.pokemon` como alias. `.pokemonbattle` enfrenta un Pokémon de cada colección; ambos usuarios deben haber atrapado al menos uno.
+
+### Gacha y personajes
+
+```text
+.w
+.claim
+.harem
+.harem 2
+.vharem 1
+.darhr @usuario 1
+.topharem
+.vender 1 5000
+.tiendag
+.comprarg 1
+.cancelarg 1
+```
+
+`.w` (también `.rw` o `.rollchar`) ofrece un personaje durante 2 minutos y tiene un enfriamiento de 35 segundos por usuario. `.claim` (o `.c`) compra la oferta con los coins disponibles y la agrega al harem. Los personajes repetidos se acumulan en una sola entrada.
+
+`.harem` muestra la colección paginada; `.vharem` abre una ficha por número de lista y `.darhr` regala una unidad. `.vender` publica una unidad en la tienda, `.comprarg` la compra por su número de orden y `.cancelarg` devuelve una publicación propia aún activa. `.topharem` clasifica las colecciones por unidades.
+
+El catálogo incluido contiene una selección local de **149 personajes** con rareza, precio, HP y poder, derivada del catálogo Kitsu distribuido con [Pain-Bot](https://github.com/nexusday/pain-bot). Se excluyen las fuentes adultas identificadas. Se mantiene ligero en lugar de incorporar el archivo original de 92.919 entradas y unos 44 MB; las mecánicas están adaptadas a los plugins y la base de datos de Velirius.
+
+### Economía
+
+```text
+.balance
+.daily
+.work
+.transf @usuario 1000
+.banco
+.unirsebank konoha
+.deposit 500
+.withdraw 100
+.change akatsuki
+.topcoins
+```
+
+El saldo total reúne cartera y banco. `.daily` entrega una recompensa creciente por racha cada 24 horas y `.work` permite trabajar cada 5 minutos. `.transf` usa únicamente la cartera del remitente. Los bancos disponibles son `konoha`, `akatsuki` y `boys`; cambiar de banco cuesta 350 coins. Tanto `.deposit` como `.withdraw` aceptan una cantidad o `all`.
+
+### Perfil RPG
+
+```text
+.perfil
+.perfil @usuario
+.setdesc Cazadora de personajes
+.setfav Rem
+.setname Lyann
+.setgenre mujer
+.setbirth 25/12/2000
+.delgenre
+.delbirth
+.birthdays
+.allbirthdays
+```
+
+El perfil combina nombre, género, cumpleaños, descripción, favorito, coins y tamaño de las colecciones. `.setname` acepta entre 2 y 14 caracteres y conserva el nombre elegido aunque cambie el nombre de WhatsApp. `.birthdays` muestra los cumpleaños del día y `.allbirthdays` ordena el calendario registrado.
 
 ### Grupos
 
@@ -379,7 +450,7 @@ npm run check
 npm test
 ```
 
-`check` valida sintaxis, configuración, banner, los 135 comandos y duplicados de alias. Las pruebas cubren configuración, mensajes, listas, API, menú, canvas, STT y stickers; no inician una sesión real de WhatsApp.
+`check` valida sintaxis, configuración, banner, los 166 comandos y duplicados de alias. Las pruebas cubren configuración, mensajes, listas, API, menú, canvas, STT, stickers, Pokémon, reacciones, gacha, personajes, economía y perfiles; no inician una sesión real de WhatsApp.
 
 ## Solución de problemas
 
@@ -415,7 +486,7 @@ Sin Sharp pueden fallar las miniaturas y los comandos locales de stickers; por e
 
 ### FFmpeg no está instalado
 
-En Termux ejecuta `pkg install ffmpeg` y reinicia el bot. Los stickers de imagen estática no necesitan FFmpeg, pero `sticker` con video, `bratvideo`, `attp` y `tovid` sí lo utilizan.
+En Termux ejecuta `pkg install ffmpeg` y reinicia el bot. Los stickers de imagen estática no necesitan FFmpeg, pero `sticker` con video, `bratvideo`, `attp`, `tovid` y las reacciones GIF sí lo utilizan.
 
 ### Actualizar el proyecto
 

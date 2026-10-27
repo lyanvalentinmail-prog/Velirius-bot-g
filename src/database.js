@@ -4,6 +4,7 @@ import path from 'node:path'
 const initialData = () => ({
   users: {},
   chats: {},
+  charShop: { nextOrder: 1, listings: [] },
   stats: { commands: {}, totalCommands: 0, startedAt: new Date().toISOString() },
 })
 
@@ -21,6 +22,7 @@ export class Database {
       this.data = {
         ...initialData(),
         ...saved,
+        charShop: { ...initialData().charShop, ...(saved.charShop || {}) },
         stats: { ...initialData().stats, ...(saved.stats || {}) },
       }
     } catch (error) {
@@ -38,7 +40,7 @@ export class Database {
       commands: 0,
       firstSeen: now,
     }
-    user.name = m.name || user.name
+    if (!user.customName) user.name = m.name || user.name
     user.messages += 1
     user.lastSeen = now
 

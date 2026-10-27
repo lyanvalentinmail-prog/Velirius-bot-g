@@ -1,6 +1,6 @@
 import { cleanNumber } from '../src/utils/format.js'
+import { gifPlaybackPayload } from '../src/utils/gif.js'
 import { requestedTargets } from '../src/utils/group.js'
-import { mediaPayload } from '../src/utils/media.js'
 
 const definitions = [
   ['hug', ['abrazo'], 'abraza a', '🤗', 'Envía un GIF de abrazo.'],
@@ -33,7 +33,7 @@ const definitions = [
 
 export default definitions.map(([id, aliases, verb, emoji, description]) => ({
   commands: [id, ...aliases],
-  category: 'reactions',
+  category: 'anime',
   description,
   usage: '[@usuario]',
   async execute(ctx) {
@@ -44,8 +44,10 @@ export default definitions.map(([id, aliases, verb, emoji, description]) => ({
       : `${emoji} ${sender}: ${id}`
     await ctx.react(emoji)
     const media = await ctx.api.media(`/reactions/${id}`, { direct: 'true' })
+    const animation = await gifPlaybackPayload(media, ctx.gifToMp4)
     await ctx.send({
-      ...mediaPayload(media, 'gif', caption),
+      ...animation,
+      caption,
       contextInfo: { mentionedJid: [ctx.m.sender, ...(target ? [target] : [])] },
     })
   },

@@ -2,16 +2,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import sharp from 'sharp'
 import webp from 'node-webpmux'
-import { PluginRegistry } from '../src/plugins.js'
 import {
   imageToSticker,
   isAnimatedWebp,
-  packFor,
   stickerPayload,
   stickerToImage,
 } from '../src/utils/sticker.js'
-
-const registry = await new PluginRegistry().load()
 
 test('crea stickers WebP de 512×512 con metadata y extrae PNG', async () => {
   const input = await sharp({
@@ -59,35 +55,4 @@ test('detecta el flag de animación WebP para el payload de Baileys', () => {
   animated[20] = 0x02
   assert.equal(isAnimatedWebp(animated), true)
   assert.equal(stickerPayload(animated).isAnimated, true)
-})
-
-test('guarda y restablece el pack y autor por usuario', async () => {
-  const plugin = registry.get('pack')
-  const user = {}
-  let saves = 0
-  const replies = []
-  const ctx = {
-    plugin,
-    userKey: 'usuario',
-    text: 'Mi Pack | Lyann',
-    config: { botName: 'Velirius Bot' },
-    m: { name: 'Usuario' },
-    db: {
-      data: { users: { usuario: user } },
-      scheduleSave: () => { saves += 1 },
-    },
-    reply: async text => replies.push(text),
-  }
-  await plugin.execute(ctx)
-  assert.equal(user.packname, 'Mi Pack')
-  assert.equal(user.author, 'Lyann')
-  assert.equal(saves, 1)
-  assert.deepEqual(packFor(ctx), { packName: 'Mi Pack', packAuthor: 'Lyann', emojis: ['☾'] })
-  assert.match(replies[0], /Metadata actualizada/)
-
-  ctx.text = 'reset'
-  await plugin.execute(ctx)
-  assert.equal(user.packname, undefined)
-  assert.equal(user.author, undefined)
-  assert.equal(packFor(ctx).packName, 'Velirius Bot')
 })

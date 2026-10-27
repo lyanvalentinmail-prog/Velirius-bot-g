@@ -26,22 +26,28 @@ const context = {
   usedPrefix: '.',
 }
 
-test('carga los 135 comandos sin alias duplicados y con sus categorías', () => {
-  assert.equal(registry.count, 135)
+test('carga los 166 comandos sin alias duplicados y con sus categorías', () => {
+  assert.equal(registry.count, 166)
   assert.ok(registry.commands.size >= 250)
   for (const command of [
     'menu', 'play', 'tiktok', 'stt', 'bratvideo', 'attp', 'emojimix',
     'sticker', 'toimg', 'tovid', 'pack', 'quotly', 'googleimg', 'pokemoncard',
+    'catch', 'pokedex', 'pokemonbattle', 'w', 'claim', 'harem', 'tiendag',
+    'balance', 'daily', 'work', 'banco', 'setdesc', 'setbirth', 'perfil',
     'ship', 'gaycard', 'minions', 'hug', 'setprefix', 'kick',
   ]) {
     assert.ok(registry.get(command), `Falta ${command}`)
   }
   const expected = {
-    anime: 4,
+    anime: 29,
+    pokemon: 3,
+    gacha: 2,
+    economia: 10,
+    personajes: 8,
+    perfil: 10,
     downloader: 9,
     searcher: 5,
     tools: 6,
-    reactions: 26,
     stickersmaker: 14,
     stickerseditor: 4,
     canvas: 19,
@@ -50,6 +56,17 @@ test('carga los 135 comandos sin alias duplicados y con sus categorías', () => 
   for (const [category, count] of Object.entries(expected)) {
     assert.equal(registry.list.filter(plugin => plugin.category === category).length, count, category)
   }
+  assert.equal(registry.get('hug').category, 'anime')
+  assert.equal(registry.get('catch').category, 'pokemon')
+  assert.equal(registry.get('pokedex').category, 'pokemon')
+  assert.equal(registry.get('pokemonbattle').category, 'pokemon')
+  assert.equal(registry.get('w').category, 'gacha')
+  assert.equal(registry.get('claim').category, 'gacha')
+  assert.equal(registry.get('balance').category, 'economia')
+  assert.equal(registry.get('harem').category, 'personajes')
+  assert.equal(registry.get('perfil').category, 'perfil')
+  assert.equal(Object.keys(CATEGORIES).length, 16)
+  assert.equal(CATEGORIES.reactions, undefined)
   for (const plugin of registry.list) {
     assert.ok(plugin.description.length > 0)
     assert.ok(CATEGORIES[plugin.category], `Categoría desconocida: ${plugin.category}`)
@@ -97,4 +114,11 @@ test('las secciones nativas generan selecciones y respetan el límite de filas',
   for (const alias of ['downloads', 'descargas', 'search', 'buscador', 'tootles', 'efectos']) {
     assert.ok(findCategory(context, alias), `Alias de categoría ausente: ${alias}`)
   }
+  assert.equal(findCategory(context, 'reactions').id, 'anime')
+  assert.equal(findCategory(context, 'reacciones').id, 'anime')
+  assert.equal(findCategory(context, 'pokemon').id, 'pokemon')
+  assert.equal(findCategory(context, 'economy').id, 'economia')
+  assert.equal(findCategory(context, 'characters').id, 'personajes')
+  assert.equal(findCategory(context, 'profile').id, 'perfil')
+  assert.equal(findCategory(context, 'rpg').id, 'gacha')
 })
