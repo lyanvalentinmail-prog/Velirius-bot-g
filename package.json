@@ -1,0 +1,37 @@
+{
+  "name": "velirius-bot",
+  "version": "1.0.0",
+  "description": "Bot modular de WhatsApp para Termux, basado en Baileys y Velirius API",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node scripts/ensure-sharp.js && node index.js",
+    "start:raw": "node index.js",
+    "dev": "node scripts/ensure-sharp.js && node --watch index.js",
+    "setup": "node scripts/configure.js",
+    "fix:sharp": "node scripts/ensure-sharp.js",
+    "check": "node --check index.js && node scripts/check.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@itsliaaa/baileys": "0.3.18-final",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "0.35.5"
+  },
+  "optionalDependencies": {
+    "@img/sharp-wasm32": "0.35.5"
+  },
+  "keywords": [
+    "whatsapp",
+    "baileys",
+    "termux",
+    "velirius"
+  ],
+  "license": "MIT"
+}

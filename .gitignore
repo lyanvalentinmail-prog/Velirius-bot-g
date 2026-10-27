@@ -1,0 +1,11 @@
+node_modules/
+sessions/
+data/*.json
+data/*.json.tmp
+logs/
+tmp/
+*.log
+.env
+.env.*
+assets/banner-custom.*
+.DS_Store

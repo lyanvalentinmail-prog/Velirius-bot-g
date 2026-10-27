@@ -1,0 +1,24 @@
+{
+  "botName": "VELIRIUS BOT",
+  "prefix": ".",
+  "owners": [
+    {
+      "number": "59896719709",
+      "name": "Lyann"
+    }
+  ],
+  "ownerLids": [],
+  "banner": "./assets/banner.jpg",
+  "menuMode": "interactive",
+  "mode": "public",
+  "sessionDir": "./sessions",
+  "autoRead": true,
+  "cooldownMs": 1200,
+  "logLevel": "silent",
+  "footer": "𓂃 ࣪ ִֶָ☾. Velirius Bot · API sin token",
+  "api": {
+    "baseUrl": "https://velirius-api-sd8u.vercel.app",
+    "timeoutMs": 120000,
+    "maxMediaMB": 64
+  }
+}
