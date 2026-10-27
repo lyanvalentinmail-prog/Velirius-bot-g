@@ -10,12 +10,14 @@ Incluye vinculación por **código QR** o **código de emparejamiento**, menú c
 - Configuración editable en caliente: prefijo, owners, nombre, banner, menú, modo y API.
 - Asistente de configuración para Termux: `npm run setup`.
 - Permisos compatibles con números normales (`PN`) e identificadores `@lid`.
-- Menú generado automáticamente desde los plugins cargados.
-- 166 comandos y 339 claves/alias, organizados en 16 categorías.
-- Descargas, búsquedas, anime, Pokémon, 19 canvas, 16 efectos, herramientas y 26 reacciones.
-- Gacha de personajes, harem, regalos, tienda, economía, bancos y perfiles RPG persistentes.
+- Menú curado y validado contra los plugins cargados, con datos dinámicos de usuario, bot, owners, actividad y memoria.
+- 219 comandos y 397 claves/alias, organizados en 18 secciones y subsecciones.
+- Descargas, búsquedas, Pokémon, 19 canvas, 16 efectos, herramientas y 26 reacciones SFW.
+- Moderación con mods, warns, mutes, pins, reglas anti, antidelete y bloqueo de palabras/stickers.
+- Subbots Multi Device mediante QR o código de emparejamiento, con listado y cierre de sesiones.
+- Gacha de personajes, harem, regalos, tienda, economía, bancos, préstamos, juegos y perfiles RPG persistentes.
 - 14 generadores de stickers, 4 editores locales y paquetes de hasta 60 stickers.
-- Base de datos JSON local para actividad, monedas, perfiles y colecciones de Pokémon/personajes.
+- Base de datos JSON local para actividad, monedas, notas, perfiles y colecciones de Pokémon/personajes.
 - Cooldown, modo público/privado y límite de tamaño para descargas.
 - Reconexión automática y script con reinicio del proceso.
 - Sin token para Velirius API.
@@ -80,6 +82,8 @@ El archivo se vuelve a cargar automáticamente cuando cambia. Si el JSON tiene u
 | `prefix` | Prefijo de comandos, de 1 a 3 caracteres. |
 | `owners` | Números con código de país y nombre visible. |
 | `ownerLids` | LIDs de owners; útil cuando WhatsApp no expone el número. |
+| `mods` | Números con permisos de moderación, sin privilegios de owner. |
+| `language` | Idioma predeterminado para herramientas de voz (`es`, `in` o `pt`). |
 | `banner` | Ruta local (`./assets/banner.jpg`) o URL HTTP(S). |
 | `menuMode` | `interactive`, `list` o `text`. |
 | `mode` | `public` para todos o `self` sólo para owners. |
@@ -169,7 +173,7 @@ El modo predeterminado es `interactive`: envía banner y un botón de selección
 - `list`: mensaje `listMessage` clásico.
 - `text`: banner y comandos en texto, sin elementos interactivos.
 
-Los dos modos de lista incorporan los nodos `biz` requeridos por WhatsApp. Las 16 categorías se reparten en secciones de máximo 10 filas para respetar los límites de WhatsApp. Al seleccionar una categoría, el bot interpreta su ID y devuelve los comandos correspondientes.
+Los dos modos de lista incorporan los nodos `biz` requeridos por WhatsApp. Las 18 secciones se reparten en grupos de máximo 10 filas para respetar los límites de WhatsApp. Al seleccionar una categoría, el bot interpreta su ID y devuelve los comandos correspondientes. El encabezado conserva la mención, rol, tiempo activo, cantidad de comandos, memoria y owners; el menú completo muestra una línea por comando y filtra las entradas owner/admin según los permisos.
 
 La visualización final depende de la versión de WhatsApp. Si una lista no aparece en un cliente, el bot intenta otras formas de envío; también puedes forzar `.setmenu texto`.
 
@@ -220,10 +224,10 @@ Descarga únicamente contenido que tengas permiso para guardar o compartir. Los 
 .stt en
 .morse SOS
 .morse decode ... --- ...
-.resize 512 512
+.resize 800x600
 ```
 
-Para `.stt en`, responde a un audio o nota de voz; el idioma es opcional y por defecto es `es`. La transcripción depende de que Velirius API tenga configurado un proveedor STT. Para `.resize`, responde a una imagen o indica una URL.
+Para `.stt en`, responde a un audio o nota de voz; el idioma es opcional y por defecto usa `language` de la configuración. La transcripción depende de que Velirius API tenga configurado un proveedor STT. Para `.resize`, responde a una imagen o sticker e indica `ancho alto` o `anchoxalto`; también admite una URL de imagen.
 
 ### Stickers maker
 
@@ -250,6 +254,7 @@ Para `.stt en`, responde a un audio o nota de voz; el idioma es opcional y por d
 
 ```text
 .pack Mi Pack,Lyann
+.pack Mi Pack.Lyann
 .pack add
 .pack done
 .pack cancel
@@ -258,7 +263,7 @@ Para `.stt en`, responde a un audio o nota de voz; el idioma es opcional y por d
 .tovid
 ```
 
-Para crear un paquete, inicia con `.pack nombre,autor` y agrega cada foto con `.pack add`, respondiendo a la imagen o enviándola con ese texto. `.pack done` sube y envía directamente un paquete de WhatsApp con portada (hasta 60 stickers), no stickers sueltos; `.pack cancel` descarta la recopilación. Las sesiones son temporales, independientes por chat y usuario, y se mantienen sólo en memoria.
+Para crear un paquete, inicia con `.pack nombre,autor` (también se acepta `.pack nombre.autor`) y agrega cada foto con `.pack add`, respondiendo a la imagen o enviándola con ese texto. `.pack done` sube y envía directamente un paquete de WhatsApp con portada (hasta 60 stickers), no stickers sueltos; `.pack cancel` descarta la recopilación. Las sesiones son temporales, independientes por chat y usuario, y se mantienen sólo en memoria.
 
 Responde a una imagen o video corto con `.sticker`, y a un sticker con `.toimg` o `.tovid`. Las conversiones de video usan FFmpeg.
 
@@ -288,22 +293,20 @@ Responde a una imagen o video corto con `.sticker`, y a un sticker con `.toimg` 
 
 Para los comandos que usan una imagen, responde a una o agrega su URL. `.google` sigue siendo la búsqueda web; `.googleimg` es el canvas de Google. Las imágenes respondidas se envían directamente por `POST` a Velirius API, sin depender de URLs temporales.
 
-Los 16 efectos son `gay`, `invert`, `grayscale`, `blur`, `pixel`, `deepfry`, `sketch`, `swirl`, `liquify`, `glitch`, `rata`, `banana`, `arandano`, `pan`, `galletita` y `minions`. Consulta sus parámetros opcionales con `.menu effects`.
+Los 16 efectos son `gay`, `invert`, `grayscale`, `blur`, `pixel`, `deepfry`, `sketch`, `swirl`, `liquify`, `glitch`, `rata`, `banana`, `arandano`, `pan`, `galletita` y `minions`. Consulta sus parámetros opcionales con `.menu imagenes`.
 
-### Anime y reacciones
+### Reacciones
 
 ```text
-.neko
-.waifu
-.maid
 .hug @usuario
 .kiss @usuario
 .pat @usuario
 .dance
 .laugh
+.cry
 ```
 
-Las 26 reacciones están dentro de la categoría Anime y usan `/reactions/:reaction` de Velirius API con contenido SFW. Los GIF se convierten a MP4 silencioso con `gifPlayback` para que WhatsApp los reproduzca como GIF.
+Las 26 reacciones están dentro de la sección Reacciones y usan `/reactions/:reaction` de Velirius API con contenido SFW. Los GIF se convierten a MP4 silencioso con `gifPlayback` para que WhatsApp los reproduzca como GIF. No se incluyen comandos NSFW ni contenido +18.
 
 ### Pokémon
 
@@ -356,6 +359,22 @@ El catálogo incluido contiene una selección local de **149 personajes** con ra
 
 El saldo total reúne cartera y banco. `.daily` entrega una recompensa creciente por racha cada 24 horas y `.work` permite trabajar cada 5 minutos. `.transf` usa únicamente la cartera del remitente. Los bancos disponibles son `konoha`, `akatsuki` y `boys`; cambiar de banco cuesta 350 coins. Tanto `.deposit` como `.withdraw` aceptan una cantidad o `all`.
 
+### Juegos y préstamos
+
+```text
+.ppt piedra
+.ppt tijera
+.ppt papel
+.dado
+.pescar
+.adivinanza
+.ahorcado
+.prestamo 1000 5
+.pagar
+```
+
+Los juegos guardan sus recompensas en la misma cartera de coins. `.adivinanza` y `.ahorcado` mantienen una partida por chat y aceptan la respuesta o letra como texto del siguiente comando. `.prestamo` admite una cantidad y, opcionalmente, días de plazo; `.pagar` descuenta la deuda sólo cuando hay saldo suficiente.
+
 ### Perfil RPG
 
 ```text
@@ -365,6 +384,9 @@ El saldo total reúne cartera y banco. `.daily` entrega una recompensa creciente
 .setfav Rem
 .setname Lyann
 .setgenre mujer
+.setage 22
+.marry @usuario
+.divorce
 .setbirth 25/12/2000
 .delgenre
 .delbirth
@@ -372,11 +394,60 @@ El saldo total reúne cartera y banco. `.daily` entrega una recompensa creciente
 .allbirthdays
 ```
 
-El perfil combina nombre, género, cumpleaños, descripción, favorito, coins y tamaño de las colecciones. `.setname` acepta entre 2 y 14 caracteres y conserva el nombre elegido aunque cambie el nombre de WhatsApp. `.birthdays` muestra los cumpleaños del día y `.allbirthdays` ordena el calendario registrado.
+El perfil combina nombre, género, edad, estado de matrimonio, cumpleaños, descripción, favorito, coins y tamaño de las colecciones. `.marry` y `.divorce` actualizan ambos perfiles. `.setname` acepta entre 2 y 14 caracteres y conserva el nombre elegido aunque cambie el nombre de WhatsApp. `.birthdays` muestra los cumpleaños del día y `.allbirthdays` ordena el calendario registrado.
 
-### Grupos
+### Grupos y moderación
 
 Incluye `kick`, `add`, `promote`, `demote`, `open`, `close`, `setgroupname`, `setgroupdesc`, `tagall`, `delete`, `link` e `infogroup`. Las acciones que modifican el grupo requieren que el usuario y/o el bot tengan los permisos correspondientes.
+
+```text
+.mod @usuario
+.mod del @usuario
+.mod lista
+.warn @usuario motivo
+.warnings @usuario
+.delwarn @usuario
+.mute @usuario
+.delmute @usuario
+.fijar
+.desfijar
+.antilink on
+.antispam on
+.antidelete on
+.antipalabra add palabra
+.antipalabra del palabra
+.sban
+```
+
+Los owners pueden delegar moderación con `.mod`; un moderador no obtiene permisos de owner. Las reglas `antiimg`, `antivideo`, `antiaudio`, `antisticker`, `antidocs`, `antilink`, `antispam`, `antibot`, `antidelete` y `antipalabras` se activan o desactivan por chat con `on`/`off`. `.sban` bloquea o vuelve a permitir el sticker respondido. Las opciones y reglas se guardan localmente por grupo.
+
+### Subbots
+
+```text
+.qr
+.code
+.bots
+```
+
+`.qr` y `.code` crean una sesión secundaria y envían el QR o código por privado al solicitante. El código de emparejamiento necesita que WhatsApp exponga el número PN; con un identificador `@lid` debe usarse QR. `.bots` lista las sesiones activas o en preparación. Las credenciales secundarias se guardan dentro de `sessions/subbots` y no deben compartirse; todas las conexiones secundarias se cierran al detener el proceso principal.
+
+### Notas, tops y diversión
+
+```text
+.nota Recordar comprar pan
+.delnota 1
+.reveal
+.topactivos
+.topinactivos
+.ship @usuario
+.friendship @usuario
+.meme
+.topgays
+.topotakus
+.topfemboys
+```
+
+Las notas se guardan por usuario y se eliminan por su número de lista. Los tops usan la actividad registrada localmente. Las funciones de diversión son ficticias y no obtienen datos privados reales.
 
 ## Endpoints de Velirius API utilizados
 
@@ -406,7 +477,7 @@ export default {
 }
 ```
 
-Después ejecuta `.reload` como owner o reinicia el bot. El menú incluirá el comando automáticamente.
+Después ejecuta `.reload` como owner o reinicia el bot. Para mostrarlo en el menú curado, añade su entrada a `MENU_LAYOUT` en `src/menu.js`; la validación impedirá anunciar comandos que no existan en el registry.
 
 Propiedades opcionales de permisos:
 
@@ -433,7 +504,9 @@ Un archivo también puede exportar un arreglo de plugins con `export default [..
 │   ├── api.js               # Cliente de Velirius API
 │   ├── handler.js           # Prefijos, permisos y contexto
 │   ├── interactive.js       # nativeFlow y listMessage
-│   ├── menu.js              # Diseño del menú
+│   ├── menu.js              # Diseño curado del menú
+│   ├── moderation.js        # Reglas anti y antidelete
+│   ├── subbots.js           # Sesiones secundarias Multi Device
 │   └── utils/               # Mensajes, JID/LID, grupos y medios
 ├── scripts/
 │   ├── configure.js         # Asistente de configuración
@@ -450,7 +523,7 @@ npm run check
 npm test
 ```
 
-`check` valida sintaxis, configuración, banner, los 166 comandos y duplicados de alias. Las pruebas cubren configuración, mensajes, listas, API, menú, canvas, STT, stickers, Pokémon, reacciones, gacha, personajes, economía y perfiles; no inician una sesión real de WhatsApp.
+`check` valida sintaxis, configuración, banner, los 219 comandos y duplicados de alias. Las pruebas cubren configuración, mensajes, listas, API, menú, moderación, subbots, juegos, notas, canvas, STT, stickers, Pokémon, reacciones, gacha, personajes, economía y perfiles; no inician una sesión real de WhatsApp.
 
 ## Solución de problemas
 

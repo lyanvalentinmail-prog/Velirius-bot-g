@@ -63,7 +63,7 @@ export default [
     await ctx.configStore.update(config => { config.mode = mode })
     await ctx.reply(`☾ Modo del bot: *${mode}*.`)
   }),
-  ownerCommand(['setautoread', 'autolectura'], 'Activa o desactiva la lectura automática.', '<on|off>', async ctx => {
+  ownerCommand(['setautoread', 'autoread', 'autolectura'], 'Activa o desactiva la lectura automática.', '<on|off>', async ctx => {
     const value = normalizeCommand(ctx.text)
     if (!['on', 'off'].includes(value)) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}setautoread on|off`)
     await ctx.configStore.update(config => { config.autoRead = value === 'on' })

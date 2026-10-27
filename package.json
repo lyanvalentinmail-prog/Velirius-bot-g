@@ -20,9 +20,10 @@
     "@hapi/boom": "^10.0.1",
     "@itsliaaa/baileys": "0.3.18-final",
     "@whiskeysockets/baileys": "7.0.0-rc14",
-    "pino": "^9.6.0",
-    "qrcode-terminal": "^0.12.0",
     "node-webpmux": "3.2.1",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
     "sharp": "0.35.5"
   },
   "optionalDependencies": {

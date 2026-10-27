@@ -9,6 +9,8 @@ export const DEFAULT_CONFIG = {
   prefix: '.',
   owners: [{ number: '59896719709', name: 'Lyann' }],
   ownerLids: [],
+  mods: [],
+  language: 'es',
   banner: './assets/banner.jpg',
   menuMode: 'interactive',
   mode: 'public',
@@ -66,6 +68,11 @@ export function normalizeConfig(input = {}) {
   config.ownerLids = [...new Set((Array.isArray(config.ownerLids) ? config.ownerLids : [])
     .map(cleanNumber)
     .filter(lid => lid.length >= 8 && lid.length <= 20))]
+  config.mods = [...new Set((Array.isArray(config.mods) ? config.mods : [])
+    .map(mod => cleanNumber(typeof mod === 'object' && mod ? mod.number : mod))
+    .filter(number => number.length >= 8 && number.length <= 20))]
+  config.language = String(config.language || 'es').toLowerCase()
+  if (!['es', 'in', 'pt'].includes(config.language)) throw new Error('language debe ser es, in o pt')
 
   if (!config.owners.length && !config.ownerLids.length) {
     throw new Error('Debe existir al menos un owner o ownerLid')

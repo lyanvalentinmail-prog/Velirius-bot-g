@@ -1,5 +1,6 @@
 import { isHttpUrl, truncate, urlOrQuery } from '../src/utils/format.js'
 import { mediaPayload } from '../src/utils/media.js'
+import { search as searchResults } from './search.js'
 
 async function download(ctx, route, params, kind = 'video') {
   await ctx.react('⏳')
@@ -62,7 +63,7 @@ export default [
     description: 'Descarga un TikTok sin marca de agua.',
     usage: '<url>',
     async execute(ctx) {
-      if (!requireUrl(ctx)) return
+      if (!isHttpUrl(ctx.text)) return searchResults(ctx, '/searcher/tiktok')
       await download(ctx, '/downloader/tiktok', { url: ctx.text, direct: 'mp4' }, 'video')
     },
   },

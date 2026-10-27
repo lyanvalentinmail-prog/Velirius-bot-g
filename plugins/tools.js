@@ -3,7 +3,7 @@ import { downloadMessageMedia, mediaPayload } from '../src/utils/media.js'
 
 export default [
   {
-    commands: ['calc', 'calculadora', 'calcular'],
+    commands: ['calc', 'calculator', 'calculadora', 'calcular'],
     category: 'tools',
     description: 'Resuelve una expresión matemática.',
     usage: '<expresión>',
@@ -35,7 +35,7 @@ export default [
     description: 'Convierte texto a voz MP3.',
     usage: '[idioma] <texto>',
     async execute(ctx) {
-      let lang = 'es'
+      let lang = ctx.config.language || 'es'
       const args = [...ctx.args]
       if (args.length > 1 && /^[a-z]{2}$/i.test(args[0])) lang = args.shift().toLowerCase()
       const text = args.join(' ') || ctx.m.quoted?.text || ''
@@ -52,7 +52,7 @@ export default [
     description: 'Transcribe un audio o nota de voz.',
     usage: '[idioma] [URL] (o responde a un audio)',
     async execute(ctx) {
-      const lang = /^[a-z]{2}$/i.test(ctx.args[0] || '') ? ctx.args[0].toLowerCase() : 'es'
+      const lang = /^[a-z]{2}$/i.test(ctx.args[0] || '') ? ctx.args[0].toLowerCase() : (ctx.config.language || 'es')
       const url = ctx.args.find(isHttpUrl)
       let result
       await ctx.react('🎙️')

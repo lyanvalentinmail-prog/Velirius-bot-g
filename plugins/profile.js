@@ -55,7 +55,8 @@ export default [
       const caption = truncate(
         `☾ *PERFIL DE @${cleanNumber(target)}*\n\n` +
         `> Nombre: *${user.name || (self ? ctx.m.name : 'Usuario')}*\n` +
-        `> Género: ${user.genre || 'No establecido'}\n` +
+        `> Género: ${user.genre || 'No establecido'} · Edad: ${user.age || 'Sin registrar'}\n` +
+        `> Pareja: ${user.spouse ? `@${cleanNumber(user.spouse)}` : 'Sin pareja'}\n` +
         `> Cumpleaños: ${user.birth || 'No registrado'}\n` +
         `> Descripción: ${user.desc || 'Sin descripción'}\n` +
         `> Favorito: ${user.favourite || 'No establecido'}\n\n` +
@@ -113,6 +114,58 @@ export default [
       user.name = name
       user.customName = true
       await saveProfile(ctx, `☾ Nombre actualizado: *${previous}* → *${name}*.`)
+    },
+  },
+  {
+    commands: ['setage'],
+    category: 'perfil',
+    description: 'Guarda tu edad en el perfil.',
+    usage: '<edad>',
+    async execute(ctx) {
+      const age = Number(ctx.args[0])
+      if (!Number.isInteger(age) || age < 1 || age > 120) return ctx.reply(`☾ Usa *${ctx.usedPrefix}setage <edad de 1 a 120>*.`)
+      const user = ensureEconomyUser(ctx)
+      user.age = age
+      await saveProfile(ctx, `☾ Edad guardada: *${age} años*.`)
+    },
+  },
+  {
+    commands: ['marry'],
+    category: 'perfil',
+    description: 'Registra una pareja en ambos perfiles.',
+    usage: '<@usuario>',
+    async execute(ctx) {
+      const target = requestedTargets(ctx, { text: false })[0]
+      if (!target) return ctx.reply(`☾ Usa *${ctx.usedPrefix}marry @usuario*.`)
+      if (sameUser(target, ctx.userKey) || sameUser(target, ctx.m.sender)) return ctx.reply('☾ No puedes casarte contigo mismo.')
+      const user = ensureEconomyUser(ctx)
+      const targetKey = economyUserKey(ctx.db.data.users, target)
+      const partner = ensureEconomyUser(ctx, targetKey)
+      if (user.spouse || partner.spouse) return ctx.reply('☾ Tú o esa persona ya tienen una pareja registrada; primero usa divorce.')
+      user.spouse = target
+      partner.spouse = ctx.userKey
+      ctx.db.scheduleSave()
+      await ctx.reply(`💍 @${cleanNumber(ctx.m.senderDisplay)} y @${cleanNumber(target)} ahora están casados.`, {
+        contextInfo: { mentionedJid: [ctx.m.sender, target] },
+      })
+    },
+  },
+  {
+    commands: ['divorce'],
+    category: 'perfil',
+    description: 'Elimina la pareja de ambos perfiles.',
+    async execute(ctx) {
+      const user = ensureEconomyUser(ctx)
+      if (!user.spouse) return ctx.reply('☾ No tienes una pareja registrada.')
+      const partnerKey = economyUserKey(ctx.db.data.users, user.spouse)
+      const partner = ctx.db.data.users[partnerKey]
+      const previous = user.spouse
+      if (partner) delete partner.spouse
+      delete user.spouse
+      ctx.db.scheduleSave()
+      await ctx.reply(`☾ Se disolvió el matrimonio con @${cleanNumber(previous)}.`, {
+        contextInfo: { mentionedJid: [previous] },
+      })
     },
   },
   {

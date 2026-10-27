@@ -56,6 +56,14 @@ test('pack inicia con nombre,autor, aísla usuarios y cancela', async () => {
   assert.match(replies.at(-1), /Paquete cancelado/)
 })
 
+test('pack también acepta nombre.autor como muestra el menú', async () => {
+  const { ctx } = makeContext('Mi Pack.Lyann')
+  await packPlugin.execute(ctx)
+  const session = packSessions.get(keyOf(ctx))
+  assert.equal(session.name, 'Mi Pack')
+  assert.equal(session.author, 'Lyann')
+})
+
 test('pack add convierte fotos y pack done retransmite un StickerPackMessage', async () => {
   const input = await sharp({
     create: { width: 48, height: 36, channels: 4, background: { r: 35, g: 120, b: 220, alpha: 1 } },
