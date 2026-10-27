@@ -32,6 +32,14 @@ test('crea stickers WebP de 512×512 con metadata y extrae PNG', async () => {
   assert.equal(payload.width, 512)
   assert.equal(payload.height, 512)
   assert.equal(payload.isAnimated, false)
+  const expectedExifHeader = Buffer.from([
+    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+  ])
+  expectedExifHeader.writeUIntLE(image.exif.length - 22, 14, 4)
+  assert.deepEqual(image.exif.subarray(0, 22), expectedExifHeader)
+  assert.equal(image.exif.readUIntLE(14, 4), image.exif.length - 22)
   const metadata = JSON.parse(image.exif.subarray(22).toString('utf8'))
   assert.equal(metadata['sticker-pack-name'], 'Pack de prueba')
   assert.equal(metadata['sticker-pack-publisher'], 'Velirius')
