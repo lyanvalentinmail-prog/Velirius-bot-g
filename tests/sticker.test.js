@@ -3,7 +3,13 @@ import assert from 'node:assert/strict'
 import sharp from 'sharp'
 import webp from 'node-webpmux'
 import { PluginRegistry } from '../src/plugins.js'
-import { imageToSticker, packFor, stickerToImage } from '../src/utils/sticker.js'
+import {
+  imageToSticker,
+  isAnimatedWebp,
+  packFor,
+  stickerPayload,
+  stickerToImage,
+} from '../src/utils/sticker.js'
 
 const registry = await new PluginRegistry().load()
 
@@ -19,6 +25,13 @@ test('crea stickers WebP de 512×512 con metadata y extrae PNG', async () => {
   await image.load(sticker)
   assert.equal(image.width, 512)
   assert.equal(image.height, 512)
+  assert.ok(sticker.length <= 100 * 1024)
+  const payload = stickerPayload(sticker)
+  assert.equal(payload.sticker, sticker)
+  assert.equal(payload.mimetype, 'image/webp')
+  assert.equal(payload.width, 512)
+  assert.equal(payload.height, 512)
+  assert.equal(payload.isAnimated, false)
   const metadata = JSON.parse(image.exif.subarray(22).toString('utf8'))
   assert.equal(metadata['sticker-pack-name'], 'Pack de prueba')
   assert.equal(metadata['sticker-pack-publisher'], 'Velirius')
@@ -26,6 +39,18 @@ test('crea stickers WebP de 512×512 con metadata y extrae PNG', async () => {
 
   const png = await stickerToImage(sticker)
   assert.equal(png.subarray(1, 4).toString(), 'PNG')
+})
+
+test('detecta el flag de animación WebP para el payload de Baileys', () => {
+  const animated = Buffer.alloc(30)
+  animated.write('RIFF', 0, 'ascii')
+  animated.writeUInt32LE(22, 4)
+  animated.write('WEBP', 8, 'ascii')
+  animated.write('VP8X', 12, 'ascii')
+  animated.writeUInt32LE(10, 16)
+  animated[20] = 0x02
+  assert.equal(isAnimatedWebp(animated), true)
+  assert.equal(stickerPayload(animated).isAnimated, true)
 })
 
 test('guarda y restablece el pack y autor por usuario', async () => {

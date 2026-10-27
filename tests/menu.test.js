@@ -8,6 +8,7 @@ import {
   buildFullMenu,
   buildMenuHeader,
   buildMenuSections,
+  buildSelectedCategory,
   categoryFromSelection,
   findCategory,
   MENU_ROW_PREFIX,
@@ -66,6 +67,23 @@ test('el menú conserva el estilo solicitado y filtra comandos owner', () => {
   assert.match(full, /\.play <canción o artista>/)
   assert.ok(!availablePlugins(context).some(plugin => plugin.owner))
   assert.ok(!full.includes('.setprefix'))
+})
+
+test('la categoría seleccionada sólo lista comandos y parámetros sin espacios extra', () => {
+  const category = {
+    ...CATEGORIES.tools,
+    plugins: registry.list.filter(plugin => plugin.category === 'tools'),
+  }
+  const selected = buildSelectedCategory(context, category)
+  const commandLines = selected.split('\n').filter(line => line.startsWith('> •'))
+  assert.equal(commandLines.length, category.plugins.length)
+  assert.ok(commandLines.every(line => !line.includes('(')))
+  assert.ok(!selected.includes('\n\n'))
+  assert.ok(!selected.includes('Escribe'))
+  for (const plugin of category.plugins) {
+    assert.ok(selected.includes(`.${plugin.commands[0]}`))
+    assert.ok(!selected.includes(plugin.description))
+  }
 })
 
 test('las secciones nativas generan selecciones y respetan el límite de filas', () => {

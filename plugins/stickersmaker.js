@@ -1,5 +1,5 @@
 import { requestWithImages, textOrQuoted } from '../src/utils/canvas.js'
-import { imageToSticker, packFor, videoToSticker } from '../src/utils/sticker.js'
+import { imageToSticker, packFor, stickerPayload, videoToSticker } from '../src/utils/sticker.js'
 
 const definitions = [
   { commands: ['brat'], description: 'Crea un sticker Brat', params: () => ({ bg: 'ffffff', color: '000000' }) },
@@ -34,7 +34,7 @@ function stickerGenerator(definition) {
       const sticker = definition.video
         ? await videoToSticker(media.buffer, packFor(ctx), media.mimetype)
         : await imageToSticker(media.buffer, packFor(ctx))
-      await ctx.send({ sticker })
+      await ctx.send(stickerPayload(sticker))
     },
   }
 }
@@ -55,7 +55,8 @@ export default [
       const media = await requestWithImages(ctx, '/canvas/emojimix', {
         params: { emoji1: emojis[0], emoji2: emojis[1] },
       })
-      await ctx.send({ sticker: await imageToSticker(media.buffer, packFor(ctx)) })
+      const sticker = await imageToSticker(media.buffer, packFor(ctx))
+      await ctx.send(stickerPayload(sticker))
     },
   },
 ]

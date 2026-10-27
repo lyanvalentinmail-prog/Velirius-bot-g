@@ -84,7 +84,8 @@ ${[...owners, ...lids].join('\n')}`.trim()
 }
 
 export function commandExample(plugin, prefix) {
-  return `> • ${prefix}${plugin.commands[0]}${plugin.usage ? ` ${plugin.usage}` : ''}`
+  const usage = String(plugin.usage || '').replace(/\s*\([^)]*\)/g, '').trim()
+  return `> • ${prefix}${plugin.commands[0]}${usage ? ` ${usage}` : ''}`
 }
 
 export function buildCategoryText(category, prefix) {
@@ -131,6 +132,6 @@ export function findCategory(ctx, value = '') {
 }
 
 export function buildSelectedCategory(ctx, category) {
-  return `${moon} *${category.label}* ${moon}\n\n${category.plugins.map(plugin =>
-    `${commandExample(plugin, ctx.usedPrefix)}\n  ${plugin.description}`).join('\n\n')}\n\n> Escribe ${ctx.usedPrefix}menu para volver.`
+  return `${moon} *${category.label}* ${moon}\n${category.plugins.map(plugin =>
+    commandExample(plugin, ctx.usedPrefix)).join('\n')}`
 }

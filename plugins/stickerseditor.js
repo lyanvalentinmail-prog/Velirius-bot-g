@@ -2,6 +2,7 @@ import { downloadMessageMedia } from '../src/utils/media.js'
 import {
   createSticker,
   packFor,
+  stickerPayload,
   stickerToImage,
   stickerToVideo,
 } from '../src/utils/sticker.js'
@@ -22,7 +23,7 @@ export default [
       if (!media) return ctx.reply('☾ Responde a una imagen o video con el comando .sticker')
       await ctx.react('🌙')
       const sticker = await createSticker(media, packFor(ctx))
-      await ctx.send({ sticker })
+      await ctx.send(stickerPayload(sticker))
     },
   },
   {

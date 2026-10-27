@@ -7,7 +7,9 @@ import sharp from 'sharp'
 import webp from 'node-webpmux'
 
 const STICKER_SIZE = 512
-const MAX_STICKER_BYTES = 950 * 1024
+const MAX_STATIC_STICKER_BYTES = 100 * 1024
+const MAX_ANIMATED_STICKER_BYTES = 500 * 1024
+const ANIMATED_ENCODE_BYTES = 480 * 1024
 
 export function packFor(ctx) {
   const user = ctx.db?.data?.users?.[ctx.userKey] || {}
@@ -15,6 +17,32 @@ export function packFor(ctx) {
     packName: user.packname || ctx.config.botName || 'Velirius Bot',
     packAuthor: user.author || ctx.m.name || 'Velirius',
     emojis: ['☾'],
+  }
+}
+
+export function isAnimatedWebp(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 20 ||
+      buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WEBP') {
+    return false
+  }
+  let offset = 12
+  while (offset + 8 <= buffer.length) {
+    const chunk = buffer.toString('ascii', offset, offset + 4)
+    const size = buffer.readUInt32LE(offset + 4)
+    if (chunk === 'ANIM' || chunk === 'ANMF') return true
+    if (chunk === 'VP8X' && offset + 8 < buffer.length && (buffer[offset + 8] & 0x02)) return true
+    offset += 8 + size + (size % 2)
+  }
+  return false
+}
+
+export function stickerPayload(buffer) {
+  return {
+    sticker: buffer,
+    mimetype: 'image/webp',
+    isAnimated: isAnimatedWebp(buffer),
+    width: STICKER_SIZE,
+    height: STICKER_SIZE,
   }
 }
 
@@ -47,9 +75,8 @@ export async function addStickerExif(buffer, {
 
 export async function imageToSticker(buffer, pack = {}) {
   if (!Buffer.isBuffer(buffer) || !buffer.length) throw new Error('La imagen llegó vacía.')
-  let output
-  for (const quality of [82, 65, 48]) {
-    output = await sharp(buffer, { limitInputPixels: 40_000_000, failOn: 'error' })
+  for (const quality of [82, 65, 50, 35, 25, 15, 10]) {
+    const output = await sharp(buffer, { limitInputPixels: 40_000_000, failOn: 'error' })
       .rotate()
       .resize(STICKER_SIZE, STICKER_SIZE, {
         fit: 'contain',
@@ -58,9 +85,10 @@ export async function imageToSticker(buffer, pack = {}) {
       })
       .webp({ quality, effort: 4 })
       .toBuffer()
-    if (output.length <= MAX_STICKER_BYTES) break
+    const sticker = await addStickerExif(output, pack)
+    if (sticker.length <= MAX_STATIC_STICKER_BYTES) return sticker
   }
-  return addStickerExif(output, pack)
+  throw new Error('No se pudo comprimir la imagen a un sticker válido de 100 KB o menos.')
 }
 
 function extensionFor(mimetype = '') {
@@ -112,14 +140,14 @@ async function runFfmpeg(args, { input = null, timeoutMs = 90_000 } = {}) {
   })
 }
 
-async function convertVideoToWebp(input, output, size, seconds, fps) {
+async function convertVideoToWebp(input, output, { seconds, fps, quality }) {
   await runFfmpeg([
     '-hide_banner', '-loglevel', 'error', '-y',
     '-i', input,
     '-t', String(seconds),
-    '-vf', `scale=${size}:${size}:force_original_aspect_ratio=decrease:flags=lanczos,fps=${fps},pad=${size}:${size}:(ow-iw)/2:(oh-ih)/2:color=0x00000000,format=rgba`,
-    '-an', '-c:v', 'libwebp', '-lossless', '0', '-q:v', '65',
-    '-loop', '0', '-preset', 'picture', '-fs', String(MAX_STICKER_BYTES),
+    '-vf', `scale=${STICKER_SIZE}:${STICKER_SIZE}:force_original_aspect_ratio=decrease:flags=lanczos,fps=${fps},pad=${STICKER_SIZE}:${STICKER_SIZE}:(ow-iw)/2:(oh-ih)/2:color=0x00000000,format=rgba`,
+    '-an', '-c:v', 'libwebp', '-lossless', '0', '-q:v', String(quality),
+    '-loop', '0', '-preset', 'picture', '-fs', String(ANIMATED_ENCODE_BYTES),
     output,
   ])
 }
@@ -130,15 +158,19 @@ export async function videoToSticker(buffer, pack = {}, mimetype = 'video/mp4') 
   const input = path.join(directory, `input.${extensionFor(mimetype)}`)
   try {
     await writeFile(input, buffer)
-    let output = path.join(directory, 'sticker.webp')
-    await convertVideoToWebp(input, output, STICKER_SIZE, 6, 12)
-    let result = await readFile(output)
-    if (result.length > MAX_STICKER_BYTES) {
-      output = path.join(directory, 'sticker-small.webp')
-      await convertVideoToWebp(input, output, 320, 4, 10)
-      result = await readFile(output)
+    const attempts = [
+      { seconds: 6, fps: 12, quality: 65 },
+      { seconds: 4, fps: 10, quality: 45 },
+      { seconds: 3, fps: 8, quality: 30 },
+    ]
+    for (const [index, attempt] of attempts.entries()) {
+      const output = path.join(directory, `sticker-${index}.webp`)
+      await convertVideoToWebp(input, output, attempt)
+      const sticker = await addStickerExif(await readFile(output), pack)
+      const limit = isAnimatedWebp(sticker) ? MAX_ANIMATED_STICKER_BYTES : MAX_STATIC_STICKER_BYTES
+      if (sticker.length <= limit) return sticker
     }
-    return addStickerExif(result, pack)
+    throw new Error('No se pudo comprimir el video a un sticker válido para WhatsApp.')
   } finally {
     await rm(directory, { recursive: true, force: true }).catch(() => {})
   }
