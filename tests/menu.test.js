@@ -4,6 +4,7 @@ import { DEFAULT_CONFIG } from '../src/config.js'
 import { PluginRegistry } from '../src/plugins.js'
 import {
   availablePlugins,
+  CATEGORIES,
   buildFullMenu,
   buildMenuHeader,
   buildMenuSections,
@@ -24,15 +25,33 @@ const context = {
   usedPrefix: '.',
 }
 
-test('carga todos los comandos sin alias duplicados', () => {
-  assert.ok(registry.count >= 80)
-  assert.ok(registry.commands.size >= 150)
-  for (const command of ['menu', 'play', 'tiktok', 'quotly', 'hug', 'setprefix', 'kick']) {
+test('carga los 135 comandos sin alias duplicados y con sus categorías', () => {
+  assert.equal(registry.count, 135)
+  assert.ok(registry.commands.size >= 250)
+  for (const command of [
+    'menu', 'play', 'tiktok', 'stt', 'bratvideo', 'attp', 'emojimix',
+    'sticker', 'toimg', 'tovid', 'pack', 'quotly', 'googleimg', 'pokemoncard',
+    'ship', 'gaycard', 'minions', 'hug', 'setprefix', 'kick',
+  ]) {
     assert.ok(registry.get(command), `Falta ${command}`)
+  }
+  const expected = {
+    anime: 4,
+    downloader: 9,
+    searcher: 5,
+    tools: 6,
+    reactions: 26,
+    stickersmaker: 14,
+    stickerseditor: 4,
+    canvas: 19,
+    effects: 16,
+  }
+  for (const [category, count] of Object.entries(expected)) {
+    assert.equal(registry.list.filter(plugin => plugin.category === category).length, count, category)
   }
   for (const plugin of registry.list) {
     assert.ok(plugin.description.length > 0)
-    assert.ok(plugin.category.length > 0)
+    assert.ok(CATEGORIES[plugin.category], `Categoría desconocida: ${plugin.category}`)
     assert.equal(typeof plugin.execute, 'function')
   }
 })
@@ -49,11 +68,15 @@ test('el menú conserva el estilo solicitado y filtra comandos owner', () => {
   assert.ok(!full.includes('.setprefix'))
 })
 
-test('las secciones nativas generan selecciones de categoría', () => {
+test('las secciones nativas generan selecciones y respetan el límite de filas', () => {
   const sections = buildMenuSections(context, true)
-  assert.ok(sections[0].rows.length >= 6)
-  assert.ok(sections[0].rows.every(row => row.id.startsWith(MENU_ROW_PREFIX)))
-  const selected = sections[0].rows[0].id
-  const category = categoryFromSelection(selected)
-  assert.ok(findCategory(context, category))
+  assert.ok(sections.length >= 2)
+  assert.ok(sections.every(section => section.rows.length > 0 && section.rows.length <= 10))
+  for (const row of sections.flatMap(section => section.rows)) {
+    assert.ok(row.id.startsWith(MENU_ROW_PREFIX))
+    assert.ok(findCategory(context, categoryFromSelection(row.id)))
+  }
+  for (const alias of ['downloads', 'descargas', 'search', 'buscador', 'tootles', 'efectos']) {
+    assert.ok(findCategory(context, alias), `Alias de categoría ausente: ${alias}`)
+  }
 })

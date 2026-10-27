@@ -38,35 +38,35 @@ async function search(ctx, route) {
 export default [
   {
     commands: ['google', 'buscar'],
-    category: 'search',
+    category: 'searcher',
     description: 'Busca páginas en la web.',
     usage: '<búsqueda>',
     execute: ctx => search(ctx, '/searcher/google'),
   },
   {
     commands: ['yts', 'ytsearch', 'youtube'],
-    category: 'search',
+    category: 'searcher',
     description: 'Busca videos en YouTube.',
     usage: '<búsqueda>',
     execute: ctx => search(ctx, '/searcher/youtube'),
   },
   {
     commands: ['ttsearch', 'tiktoksearch'],
-    category: 'search',
+    category: 'searcher',
     description: 'Busca videos en TikTok.',
     usage: '<búsqueda>',
     execute: ctx => search(ctx, '/searcher/tiktok'),
   },
   {
     commands: ['wiki', 'wikipedia'],
-    category: 'search',
+    category: 'searcher',
     description: 'Busca artículos en Wikipedia.',
     usage: '<tema>',
     execute: ctx => search(ctx, '/searcher/wikipedia'),
   },
   {
     commands: ['pinterest', 'pin'],
-    category: 'search',
+    category: 'searcher',
     description: 'Busca y envía tres imágenes de Pinterest.',
     usage: '<búsqueda>',
     async execute(ctx) {

@@ -84,6 +84,7 @@ export class MessageHandler {
       conn: sock,
       m,
       msg: m.raw,
+      userKey: m.senderDisplay || m.sender,
       config,
       configStore: this.configStore,
       db: this.database,

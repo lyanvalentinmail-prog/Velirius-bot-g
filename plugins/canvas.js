@@ -1,117 +1,247 @@
-import { isHttpUrl } from '../src/utils/format.js'
-import { downloadMessageMedia, mediaPayload } from '../src/utils/media.js'
+import {
+  argsWithoutUrls,
+  imageCanvasCommand,
+  imageInput,
+  parts,
+  profileInput,
+  requestWithImages,
+  sendCanvas,
+  textCanvasCommand,
+  textOrQuoted,
+  textWithoutUrls,
+} from '../src/utils/canvas.js'
+import { mediaPayload } from '../src/utils/media.js'
 
-async function uploadRepliedImage(ctx, required = false) {
-  const media = await downloadMessageMedia(ctx.m, {
-    types: ['image'],
-    maxBytes: 15 * 1024 * 1024,
-  })
-  if (!media) {
-    if (required) throw new Error('Responde a una imagen o indica una URL pública.')
-    return ''
+function pairCanvas(id, description) {
+  return {
+    commands: [id],
+    category: 'canvas',
+    description,
+    usage: '<nombre 1> | <nombre 2> [|%] [|texto]',
+    async execute(ctx) {
+      const [name1, name2, percentage, ...rest] = parts(ctx.text)
+      if (!name1 || !name2) {
+        return ctx.reply(`☾ Uso: ${ctx.usedPrefix}${id} Luna | Sol | 95 | Mejores amigos`)
+      }
+      await ctx.react('🌙')
+      const target = ctx.m.mentions[0] || ctx.m.quoted?.sender
+      const [image1, image2] = await Promise.all([
+        profileInput(ctx, ctx.m.sender),
+        target ? profileInput(ctx, target) : null,
+      ])
+      return sendCanvas(ctx, id, {
+        params: { name1, name2, percentage, text: rest.join(' | ') || undefined },
+        sources: { image1, image2 },
+      })
+    },
   }
-  const mimetype = media.mimetype === 'image/jpg' ? 'image/jpeg' : media.mimetype
-  const uploaded = await ctx.api.uploadImage(media.buffer, mimetype)
-  return uploaded.url
-}
-
-function textOrQuoted(ctx) {
-  return ctx.text || ctx.m.quoted?.text || ''
 }
 
 export default [
   {
-    commands: ['brat'],
-    category: 'canvas',
-    description: 'Crea una imagen estilo Brat.',
-    usage: '<texto>',
-    async execute(ctx) {
-      const text = textOrQuoted(ctx)
-      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}brat Velirius Bot`)
-      await ctx.react('🤍')
-      const media = await ctx.api.media('/canvas/brat', { text })
-      await ctx.send(mediaPayload(media, 'image'))
-    },
-  },
-  {
-    commands: ['bratvideo', 'bratv'],
-    category: 'canvas',
-    description: 'Crea un video Brat con palabras progresivas.',
-    usage: '<texto>',
-    async execute(ctx) {
-      const text = textOrQuoted(ctx)
-      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}bratvideo Velirius Bot`)
-      await ctx.react('🎬')
-      const media = await ctx.api.media('/canvas/bratvideo', { text })
-      await ctx.send(mediaPayload(media, 'video'))
-    },
-  },
-  {
-    commands: ['ttp'],
-    category: 'canvas',
-    description: 'Convierte texto en una imagen espaciada.',
-    usage: '<texto>',
-    async execute(ctx) {
-      const text = textOrQuoted(ctx)
-      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}ttp VELIRIUS`)
-      const media = await ctx.api.media('/canvas/ttp', { text })
-      await ctx.send(mediaPayload(media, 'image'))
-    },
-  },
-  {
     commands: ['quotly', 'qc'],
     category: 'canvas',
-    description: 'Crea una cita con avatar y burbuja de chat.',
-    usage: '<texto> (responde a una foto para usarla)',
+    description: 'Convierte texto en una cita con foto de perfil',
+    usage: '<texto>',
     async execute(ctx) {
       const text = textOrQuoted(ctx)
-      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}quotly Hola a todos`)
+      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}quotly <texto>`)
       await ctx.react('💬')
-      let image = await uploadRepliedImage(ctx)
-      const avatarOwner = ctx.m.quoted?.sender || ctx.m.sender
-      if (!image && avatarOwner) {
-        image = await ctx.sock.profilePictureUrl(avatarOwner, 'image').catch(() => '')
-      }
-      const media = await ctx.api.media('/canvas/quotly', {
-        text,
-        username: ctx.m.quoted?.sender ? 'Mensaje citado' : ctx.m.name,
-        ...(image ? { image } : {}),
-      })
-      await ctx.send(mediaPayload(media, 'image'))
+      const image = await imageInput(ctx, { profile: true })
+      return sendCanvas(ctx, 'quotly', { params: { text }, sources: { image } })
     },
   },
   {
-    commands: ['emojimix', 'mezclaremoji'],
+    commands: ['iqc'],
     category: 'canvas',
-    description: 'Mezcla dos emojis en una imagen.',
-    usage: '<emoji1> <emoji2>',
+    description: 'Crea una cita estilo iMessage',
+    usage: '<texto>',
     async execute(ctx) {
-      const [emoji1, emoji2] = ctx.args
-      if (!emoji1 || !emoji2) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}emojimix 😀 😂`)
-      const media = await ctx.api.media('/canvas/emojimix', { emoji1, emoji2 })
-      await ctx.send(mediaPayload(media, 'image'))
+      const text = textOrQuoted(ctx)
+      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}iqc <texto>`)
+      await ctx.react('💬')
+      const includeReply = Boolean(ctx.text && ctx.m.quoted?.text)
+      return sendCanvas(ctx, 'iqc', {
+        params: {
+          text,
+          ...(includeReply ? { replyText: ctx.m.quoted.text, replyName: 'Usuario' } : {}),
+        },
+      })
+    },
+  },
+  textCanvasCommand({
+    commands: ['iqcblue', 'iqcazul'],
+    description: 'Crea una cita azul estilo iMessage',
+  }),
+  textCanvasCommand({
+    commands: ['iqcpink', 'iqcrosa'],
+    description: 'Crea una cita rosa estilo iMessage',
+  }),
+  textCanvasCommand({
+    commands: ['messengerquote', 'messenger'],
+    description: 'Crea una cita estilo Messenger',
+  }),
+  {
+    commands: ['profilenote', 'notaperfil'],
+    category: 'canvas',
+    description: 'Crea una nota con tu foto de perfil',
+    usage: '[texto de la nota]',
+    async execute(ctx) {
+      await ctx.react('🌙')
+      const image = await imageInput(ctx, { profile: true })
+      return sendCanvas(ctx, 'profilenote', {
+        params: { text: ctx.text || 'Tu nota', label: ctx.text || 'Tu nota' },
+        sources: { image },
+      })
     },
   },
   {
-    commands: ['resize', 'redimensionar'],
-    category: 'tools',
-    description: 'Redimensiona una imagen respondida o por URL.',
-    usage: '[url] <ancho> [alto]',
+    commands: ['pov'],
+    category: 'canvas',
+    description: 'Crea un meme POV con tu foto',
+    usage: '<texto>',
     async execute(ctx) {
-      const url = ctx.args.find(isHttpUrl)
-      const image = url || await uploadRepliedImage(ctx, true)
-      const dimensions = ctx.args.filter(arg => /^\d+$/.test(arg)).map(Number)
-      const width = dimensions[0] || 512
-      const height = dimensions[1]
-      if (width > 4096 || height > 4096) return ctx.reply('☾ Las dimensiones máximas son 4096 × 4096.')
-      await ctx.react('📐')
-      const media = await ctx.api.media('/tools/resize', {
-        url: image,
-        width,
-        ...(height ? { height } : {}),
-        format: 'png',
+      const text = textOrQuoted(ctx)
+      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}pov <texto>`)
+      await ctx.react('🎨')
+      const source = await imageInput(ctx, { profile: true })
+      return sendCanvas(ctx, 'pov', { params: { text }, sources: { image: source } })
+    },
+  },
+  textCanvasCommand({
+    commands: ['x', 'tweet'],
+    description: 'Crea una publicación estilo X',
+  }),
+  {
+    commands: ['cuentatiktok', 'tiktokaccount'],
+    category: 'canvas',
+    description: 'Crea un perfil falso de TikTok',
+    usage: '[usuario] [|estado]',
+    async execute(ctx) {
+      await ctx.react('🎨')
+      const [username, status] = parts(ctx.text)
+      const source = await imageInput(ctx, { profile: true })
+      return sendCanvas(ctx, 'cuentatiktok', {
+        params: { username: username || ctx.m.name, status: status || undefined },
+        sources: { image: source },
       })
-      await ctx.send(mediaPayload(media, 'image', `☾ ${width}${height ? ` × ${height}` : ''} px`))
+    },
+  },
+  {
+    commands: ['storyreply', 'historia'],
+    category: 'canvas',
+    description: 'Crea una respuesta a una historia',
+    usage: '<texto> (respondiendo a una imagen o con URL)',
+    async execute(ctx) {
+      const text = textWithoutUrls(ctx) || ctx.m.quoted?.text
+      if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}storyreply <texto> (con imagen)`)
+      const source = await imageInput(ctx, { required: true })
+      await ctx.react('💬')
+      return sendCanvas(ctx, 'storyreply', { params: { text }, sources: { url: source } })
+    },
+  },
+  imageCanvasCommand({
+    commands: ['canvaimagen', 'canva'],
+    category: 'canvas',
+    description: 'Convierte una imagen en un lienzo',
+    usage: '[zoom] [URL] (o responde a una imagen)',
+    params: (ctx, args) => ({ zoom: args[0] || undefined }),
+  }),
+  imageCanvasCommand({
+    commands: ['laptop'],
+    category: 'canvas',
+    description: 'Coloca una imagen en una laptop',
+    usage: '[zoom] [URL] (o responde a una imagen)',
+    params: (ctx, args) => ({ zoom: args[0] || undefined }),
+  }),
+  imageCanvasCommand({
+    commands: ['pc'],
+    category: 'canvas',
+    description: 'Coloca una imagen en un monitor de PC',
+  }),
+  {
+    commands: ['googleimg', 'canvasgoogle'],
+    category: 'canvas',
+    description: 'Crea una búsqueda de Google con tu foto',
+    usage: '(opcionalmente responde a una imagen)',
+    async execute(ctx) {
+      await ctx.react('🎨')
+      const image = await imageInput(ctx, { profile: true })
+      return sendCanvas(ctx, 'google', { sources: { url: image } })
+    },
+  },
+  {
+    commands: ['searched', 'buscado'],
+    category: 'canvas',
+    description: 'Crea un meme de búsqueda con una imagen',
+    usage: '[nombre] [URL] (o responde a una imagen)',
+    async execute(ctx) {
+      const source = await imageInput(ctx, { required: true })
+      await ctx.react('🎨')
+      return sendCanvas(ctx, 'searched', {
+        params: { name: textWithoutUrls(ctx) || ctx.m.name },
+        sources: { url: source },
+      })
+    },
+  },
+  {
+    commands: ['pokemoncard', 'cartapokemon'],
+    category: 'canvas',
+    description: 'Crea una carta Pokémon personalizada',
+    usage: '<nombre>|<HP>|<ataque>|<daño>|<descripción> (con imagen)',
+    async execute(ctx) {
+      const source = await imageInput(ctx, { required: true })
+      const [name, hp, attack, damage, ...description] = parts(textWithoutUrls(ctx))
+      await ctx.react('🎨')
+      return sendCanvas(ctx, 'pokemoncard', {
+        params: {
+          name: name || ctx.m.name,
+          hp: hp || undefined,
+          attack: attack || undefined,
+          damage: damage || undefined,
+          description: description.join(' | ') || undefined,
+        },
+        sources: { url: source },
+      })
+    },
+  },
+  pairCanvas('ship', 'Crea una carta de compatibilidad'),
+  pairCanvas('friendship', 'Crea una carta de amistad'),
+  {
+    commands: ['gaycard'],
+    category: 'canvas',
+    description: 'Crea una Gay Card personalizada',
+    usage: '[nombre] [|%] [URL] (o responde a una imagen)',
+    async execute(ctx) {
+      const source = await imageInput(ctx, { required: true })
+      const [name, percentage] = parts(textWithoutUrls(ctx))
+      await ctx.react('🎨')
+      return sendCanvas(ctx, 'gaycard', {
+        params: { name: name || ctx.m.name, percentage: percentage || undefined },
+        sources: { url: source },
+      })
+    },
+  },
+  {
+    commands: ['resize', 'rezize'],
+    category: 'tools',
+    description: 'Redimensiona una imagen con Sharp',
+    usage: '[ancho] [alto] (respondiendo a una imagen)',
+    async execute(ctx) {
+      const source = await imageInput(ctx, { required: true })
+      const args = argsWithoutUrls(ctx)
+      const width = args[0] ? Number(args[0]) : 512
+      const height = args[1] ? Number(args[1]) : (args[0] ? undefined : 512)
+      if ((width !== undefined && (!Number.isInteger(width) || width < 1 || width > 4096)) ||
+          (height !== undefined && (!Number.isInteger(height) || height < 1 || height > 4096))) {
+        return ctx.reply('☾ El ancho y el alto deben ser enteros entre 1 y 4096.')
+      }
+      await ctx.react('🌙')
+      const media = await requestWithImages(ctx, '/tools/resize', {
+        params: { width, height, format: 'png' },
+        sources: { url: source },
+      })
+      await ctx.send(mediaPayload(media, 'image'))
     },
   },
 ]

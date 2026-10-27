@@ -1,5 +1,5 @@
-import { truncate } from '../src/utils/format.js'
-import { mediaPayload } from '../src/utils/media.js'
+import { isHttpUrl, truncate } from '../src/utils/format.js'
+import { downloadMessageMedia, mediaPayload } from '../src/utils/media.js'
 
 export default [
   {
@@ -44,6 +44,45 @@ export default [
       await ctx.react('🎙️')
       const media = await ctx.api.media('/tools/tts', { text, lang, direct: 'true' })
       await ctx.send(mediaPayload(media, 'audio'))
+    },
+  },
+  {
+    commands: ['stt', 'speechtotext', 'transcribir'],
+    category: 'tools',
+    description: 'Transcribe un audio o nota de voz.',
+    usage: '[idioma] [URL] (o responde a un audio)',
+    async execute(ctx) {
+      const lang = /^[a-z]{2}$/i.test(ctx.args[0] || '') ? ctx.args[0].toLowerCase() : 'es'
+      const url = ctx.args.find(isHttpUrl)
+      let result
+      await ctx.react('🎙️')
+      if (url) {
+        result = await ctx.api.json('/tools/stt', { url, lang }, { timeoutMs: 120000 })
+      } else {
+        const media = await downloadMessageMedia(ctx.m, {
+          types: ['audio'],
+          maxBytes: 16 * 1024 * 1024,
+        })
+        if (!media) {
+          return ctx.reply(`☾ Responde a un audio con ${ctx.usedPrefix}stt o usa ${ctx.usedPrefix}stt <URL>`)
+        }
+        const mimetype = String(media.mimetype || 'audio/mpeg').split(';')[0]
+        result = await ctx.api.request('/tools/stt', {
+          method: 'POST',
+          params: { lang },
+          body: {
+            audio: `data:${mimetype};base64,${media.buffer.toString('base64')}`,
+            mime: mimetype,
+            lang,
+          },
+          responseType: 'json',
+          timeoutMs: 120000,
+        })
+      }
+      const text = String(result?.text || '').trim()
+      await ctx.reply(text
+        ? truncate(`☾ *TRANSCRIPCIÓN*\n\n${text}\n\n> Proveedor: ${result.provider || 'Velirius API'}`, 14000)
+        : '☾ No se detectó voz en el audio.')
     },
   },
   {

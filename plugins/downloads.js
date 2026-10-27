@@ -25,7 +25,7 @@ const qualities = new Set(['360', '480', '720', '1080'])
 export default [
   {
     commands: ['play', 'playaudio'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Busca y descarga una canción completa.',
     usage: '<canción o artista>',
     async execute(ctx) {
@@ -35,7 +35,7 @@ export default [
   },
   {
     commands: ['mp3', 'ytmp3'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Descarga audio MP3 desde YouTube.',
     usage: '<url o búsqueda>',
     async execute(ctx) {
@@ -45,7 +45,7 @@ export default [
   },
   {
     commands: ['mp4', 'ytmp4', 'ytvideo'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Descarga video MP4 con audio desde YouTube.',
     usage: '<url o búsqueda> [360|480|720|1080]',
     async execute(ctx) {
@@ -58,7 +58,7 @@ export default [
   },
   {
     commands: ['tiktok', 'tt'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Descarga un TikTok sin marca de agua.',
     usage: '<url>',
     async execute(ctx) {
@@ -68,7 +68,7 @@ export default [
   },
   {
     commands: ['tiktokaudio', 'ttaudio'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Extrae el audio de un TikTok.',
     usage: '<url>',
     async execute(ctx) {
@@ -78,7 +78,7 @@ export default [
   },
   {
     commands: ['facebook', 'fb'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Descarga un video público de Facebook.',
     usage: '<url>',
     async execute(ctx) {
@@ -88,7 +88,7 @@ export default [
   },
   {
     commands: ['instagram', 'ig'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Descarga una foto o reel de Instagram.',
     usage: '<url>',
     async execute(ctx) {
@@ -98,7 +98,7 @@ export default [
   },
   {
     commands: ['pindl', 'pinterestdl'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Descarga el archivo original de un pin.',
     usage: '<url>',
     async execute(ctx) {
@@ -110,7 +110,7 @@ export default [
   },
   {
     commands: ['letra', 'lyrics', 'lyric'],
-    category: 'downloads',
+    category: 'downloader',
     description: 'Busca la letra de una canción.',
     usage: '<artista y canción>',
     async execute(ctx) {

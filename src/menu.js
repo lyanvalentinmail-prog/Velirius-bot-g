@@ -4,14 +4,34 @@ export const MENU_ROW_PREFIX = 'vlrs_menu_'
 
 export const CATEGORIES = {
   general: { label: '𝙶𝙴𝙽𝙴𝚁𝙰𝙻', description: 'Menú, estado y perfil' },
-  downloads: { label: '𝙳𝙴𝚂𝙲𝙰𝚁𝙶𝙰𝚂', description: 'Música y videos' },
-  search: { label: '𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰', description: 'YouTube, Google y más' },
   anime: { label: '𝙰𝙽𝙸𝙼𝙴', description: 'Imágenes y Pokémon' },
+  downloader: { label: '𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝚁', description: 'Música y videos' },
+  searcher: { label: '𝚂𝙴𝙰𝚁𝙲𝙷𝙴𝚁', description: 'YouTube, Google y más' },
+  tools: { label: '𝚃𝙾𝙾𝙻𝚂', description: 'Calculadora, voz y utilidades' },
   reactions: { label: '𝚁𝙴𝙰𝙲𝙲𝙸𝙾𝙽𝙴𝚂', description: 'GIFs para interactuar' },
+  stickersmaker: { label: '𝚂𝚃𝙸𝙲𝙺𝙴𝚁𝚂 𝙼𝙰𝙺𝙴𝚁', description: 'Genera stickers con la API' },
+  stickerseditor: { label: '𝚂𝚃𝙸𝙲𝙺𝙴𝚁𝚂 𝙴𝙳𝙸𝚃𝙾𝚁', description: 'Crea, extrae y personaliza stickers' },
   canvas: { label: '𝙲𝙰𝙽𝚅𝙰𝚂', description: 'Imágenes personalizadas' },
-  tools: { label: '𝙷𝙴𝚁𝚁𝙰𝙼𝙸𝙴𝙽𝚃𝙰𝚂', description: 'Utilidades de la API' },
+  effects: { label: '𝙴𝙵𝙵𝙴𝙲𝚃𝚂', description: 'Efectos para tus imágenes' },
   group: { label: '𝙶𝚁𝚄𝙿𝙾', description: 'Administración de grupos' },
   owner: { label: '𝙿𝚁𝙾𝙿𝙸𝙴𝚃𝙰𝚁𝙸𝙾', description: 'Configuración del bot' },
+}
+
+const CATEGORY_ALIASES = {
+  downloads: 'downloader',
+  descargas: 'downloader',
+  search: 'searcher',
+  busqueda: 'searcher',
+  buscador: 'searcher',
+  herramientas: 'tools',
+  tootles: 'tools',
+  stickers: 'stickersmaker',
+  sticker: 'stickersmaker',
+  stickereditor: 'stickerseditor',
+  efectos: 'effects',
+  reacciones: 'reactions',
+  grupos: 'group',
+  propietario: 'owner',
 }
 
 const categoryOrder = Object.keys(CATEGORIES)
@@ -81,14 +101,20 @@ export function buildFullMenu(ctx) {
 }
 
 export function buildMenuSections(ctx, native = false) {
-  return [{
-    title: `${moon} 𝙲𝙰𝚃𝙴𝙶𝙾𝚁𝙸𝙰𝚂`,
-    rows: pluginsByCategory(ctx).map(category => ({
-      ...(native ? { header: '', id: `${MENU_ROW_PREFIX}${category.id}` } : { rowId: `${MENU_ROW_PREFIX}${category.id}` }),
-      title: category.label,
-      description: `${category.description} · ${category.plugins.length} comandos`,
-    })),
-  }]
+  const rows = pluginsByCategory(ctx).map(category => ({
+    ...(native ? { header: '', id: `${MENU_ROW_PREFIX}${category.id}` } : { rowId: `${MENU_ROW_PREFIX}${category.id}` }),
+    title: category.label,
+    description: `${category.description} · ${category.plugins.length} comandos`,
+  }))
+  const sections = []
+  for (let index = 0; index < rows.length; index += 10) {
+    const page = Math.floor(index / 10) + 1
+    sections.push({
+      title: `${moon} 𝙲𝙰𝚃𝙴𝙶𝙾𝚁𝙸𝙰𝚂${page > 1 ? ` · ${page}` : ''}`,
+      rows: rows.slice(index, index + 10),
+    })
+  }
+  return sections
 }
 
 export function categoryFromSelection(selectionId = '') {
@@ -99,8 +125,9 @@ export function categoryFromSelection(selectionId = '') {
 
 export function findCategory(ctx, value = '') {
   const wanted = normalizeCommand(value)
+  const resolved = CATEGORY_ALIASES[wanted] || wanted
   return pluginsByCategory(ctx).find(category =>
-    normalizeCommand(category.id) === wanted || normalizeCommand(category.label) === wanted) || null
+    normalizeCommand(category.id) === resolved || normalizeCommand(category.label) === wanted) || null
 }
 
 export function buildSelectedCategory(ctx, category) {
