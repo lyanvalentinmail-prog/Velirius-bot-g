@@ -10,6 +10,11 @@ const STICKER_SIZE = 512
 const MAX_STATIC_STICKER_BYTES = 100 * 1024
 const MAX_ANIMATED_STICKER_BYTES = 500 * 1024
 const ANIMATED_ENCODE_BYTES = 480 * 1024
+const EXIF_HEADER = Buffer.from([
+  0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00,
+  0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+])
 
 export function packFor(ctx) {
   const user = ctx.db?.data?.users?.[ctx.userKey] || {}
@@ -62,10 +67,10 @@ export async function addStickerExif(buffer, {
     emojis: Array.isArray(emojis) ? emojis.slice(0, 8) : ['☾'],
   }
   const jsonBuffer = Buffer.from(JSON.stringify(json), 'utf8')
-  const exif = Buffer.alloc(22 + jsonBuffer.length)
-  exif.write('Exif', 0, 'ascii')
-  exif.writeUInt32LE(jsonBuffer.length, 14, 'little')
-  jsonBuffer.copy(exif, 22)
+  const exif = Buffer.alloc(EXIF_HEADER.length + jsonBuffer.length)
+  EXIF_HEADER.copy(exif, 0)
+  exif.writeUIntLE(jsonBuffer.length, 14, 4)
+  jsonBuffer.copy(exif, EXIF_HEADER.length)
 
   const image = new webp.Image()
   await image.load(buffer)
