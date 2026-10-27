@@ -47,7 +47,9 @@ function makeContext(users = {}) {
 afterEach(() => resetCharacterSessions())
 
 test('el catálogo local contiene personajes utilizables', () => {
-  assert.equal(characterCatalog.length, 150)
+  assert.equal(characterCatalog.length, 149)
+  assert.equal(characterCatalog.some(character =>
+    character.id === '21265' || /maple colors/i.test(character.anime)), false)
   for (const character of characterCatalog) {
     assert.ok(character.id)
     assert.ok(character.name)

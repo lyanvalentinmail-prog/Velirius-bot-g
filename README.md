@@ -337,7 +337,7 @@ Las 26 reacciones están dentro de la categoría Anime y usan `/reactions/:react
 
 `.harem` muestra la colección paginada; `.vharem` abre una ficha por número de lista y `.darhr` regala una unidad. `.vender` publica una unidad en la tienda, `.comprarg` la compra por su número de orden y `.cancelarg` devuelve una publicación propia aún activa. `.topharem` clasifica las colecciones por unidades.
 
-El catálogo incluido contiene una selección local de **150 personajes** con rareza, precio, HP y poder, derivada del catálogo Kitsu distribuido con [Pain-Bot](https://github.com/nexusday/pain-bot). Se mantiene ligero en lugar de incorporar el archivo original de 92.919 entradas y unos 44 MB; las mecánicas están adaptadas a los plugins y la base de datos de Velirius.
+El catálogo incluido contiene una selección local de **149 personajes** con rareza, precio, HP y poder, derivada del catálogo Kitsu distribuido con [Pain-Bot](https://github.com/nexusday/pain-bot). Se excluyen las fuentes adultas identificadas. Se mantiene ligero en lugar de incorporar el archivo original de 92.919 entradas y unos 44 MB; las mecánicas están adaptadas a los plugins y la base de datos de Velirius.
 
 ### Economía
 

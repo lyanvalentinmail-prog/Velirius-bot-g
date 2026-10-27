@@ -672,18 +672,6 @@
     "power": 25
   },
   {
-    "id": "21265",
-    "name": "Kiminobu Hatorri",
-    "anime": "Maple Colors",
-    "image": "https://media.kitsu.app/characters/images/21265/original.jpg",
-    "imageAlt": "https://media.kitsu.app/character/21265/image/large-c16db7afd9ed91bc73f8591b83ddc9d4.jpeg",
-    "rarity": "uncommon",
-    "rarityLabel": "Poco común",
-    "price": 12412,
-    "maxHp": 617,
-    "power": 142
-  },
-  {
     "id": "21747",
     "name": "Lasse Aeon",
     "anime": "Kidou Senshi Gundam 00 Second Season",
