@@ -169,7 +169,8 @@ export default [
         return ctx.reply(`☾ Ya tienes un paquete en curso. Usa ${prefix}pack done para enviarlo o ${prefix}pack cancel para descartarlo.`)
       }
       if (text.length > 200) return ctx.reply('☾ El nombre del paquete y el autor no pueden superar 200 caracteres en total.')
-      const separator = text.indexOf(',')
+      let separator = text.indexOf(',')
+      if (separator < 1) separator = text.indexOf('.')
       if (separator < 1) return ctx.reply(usage)
       const name = text.slice(0, separator).trim()
       const author = text.slice(separator + 1).trim()

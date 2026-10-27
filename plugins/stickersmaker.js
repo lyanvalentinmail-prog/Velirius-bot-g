@@ -1,4 +1,4 @@
-import { requestWithImages, textOrQuoted } from '../src/utils/canvas.js'
+import { imageInput, requestWithImages, textOrQuoted } from '../src/utils/canvas.js'
 import { imageToSticker, packFor, stickerPayload, videoToSticker } from '../src/utils/sticker.js'
 
 const definitions = [
@@ -11,10 +11,7 @@ const definitions = [
   { commands: ['attp'], description: 'Crea texto animado de colores', video: true },
   { commands: ['ttp'], description: 'Crea un sticker de texto estático' },
   { commands: ['absolutecinema', 'cinema'], description: 'Crea un sticker Absolute Cinema' },
-  { commands: ['bobesponja'], description: 'Crea un meme de Bob Esponja', params: () => ({ mode: 'text' }) },
-  { commands: ['bobesponja2'], description: 'Crea la segunda variante de Bob Esponja', params: () => ({ mode: 'text' }) },
-  { commands: ['bobesponja3'], description: 'Crea la tercera variante de Bob Esponja', params: () => ({ mode: 'text' }) },
-  { commands: ['cartelboy'], description: 'Crea un cartel de Cartel Boy', params: () => ({ mode: 'text' }) },
+  { commands: ['bratboy', 'cartelboy'], description: 'Crea un sticker Brat Boy', id: 'cartelboy', params: () => ({ mode: 'text' }) },
 ]
 
 function stickerGenerator(definition) {
@@ -28,7 +25,7 @@ function stickerGenerator(definition) {
       const text = textOrQuoted(ctx)
       if (!text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}${command} <texto>`)
       await ctx.react('🌙')
-      const media = await requestWithImages(ctx, `/canvas/${command}`, {
+      const media = await requestWithImages(ctx, `/canvas/${definition.id || command}`, {
         params: { text, ...(definition.params?.(ctx, text) || {}) },
       })
       const sticker = definition.video
@@ -41,6 +38,42 @@ function stickerGenerator(definition) {
 
 export default [
   ...definitions.map(stickerGenerator),
+  {
+    commands: ['bobesponja', 'bobesponja2', 'bobesponja3'],
+    category: 'stickersmaker',
+    description: 'Crea un meme de Bob Esponja con tres variantes.',
+    usage: '<1/2/3> <texto>',
+    async execute(ctx) {
+      const args = [...ctx.args]
+      let variant = Number(ctx.command.at(-1)) || 1
+      if (['1', '2', '3'].includes(args[0])) variant = Number(args.shift())
+      const text = args.join(' ').trim() || ctx.m.quoted?.text || ''
+      if (!text) return ctx.reply(`☾ Uso: *${ctx.usedPrefix}bobesponja <1/2/3> <texto>*.`)
+      const route = variant === 1 ? 'bobesponja' : `bobesponja${variant}`
+      await ctx.react('🌙')
+      const media = await requestWithImages(ctx, `/canvas/${route}`, { params: { text, mode: 'text' } })
+      const sticker = await imageToSticker(media.buffer, packFor(ctx))
+      await ctx.send(stickerPayload(sticker))
+    },
+  },
+  {
+    commands: ['sgay'],
+    category: 'stickersmaker',
+    description: 'Crea un sticker Gay Card con imagen y texto.',
+    usage: '<foto> <texto>',
+    async execute(ctx) {
+      const text = textOrQuoted(ctx)
+      if (!text) return ctx.reply(`☾ Usa *${ctx.usedPrefix}sgay <texto>* respondiendo a una imagen.`)
+      const source = await imageInput(ctx, { required: true })
+      await ctx.react('🌙')
+      const media = await requestWithImages(ctx, '/canvas/gaycard', {
+        params: { name: text },
+        sources: { url: source },
+      })
+      const sticker = await imageToSticker(media.buffer, packFor(ctx))
+      await ctx.send(stickerPayload(sticker))
+    },
+  },
   {
     commands: ['emojimix', 'emix'],
     category: 'stickersmaker',

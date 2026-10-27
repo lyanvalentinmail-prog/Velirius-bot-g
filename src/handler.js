@@ -1,7 +1,9 @@
 import { VeliriusAPI, ApiError, MediaTooLargeError } from './api.js'
 import { categoryFromSelection } from './menu.js'
+import { ModerationEngine } from './moderation.js'
 import { errorMessage, truncate } from './utils/format.js'
 import { groupContext } from './utils/group.js'
+import { hasModIdentity } from './utils/jid.js'
 import { parseCommandText, serializeMessage } from './utils/messages.js'
 
 export class MessageHandler {
@@ -13,16 +15,24 @@ export class MessageHandler {
     this.runtime = runtime
     this.cooldowns = new Map()
     this.groupCache = new Map()
+    this.moderation = new ModerationEngine(database)
   }
 
   async handle(sock, raw) {
     if (!raw?.message || !raw.key?.remoteJid) return
     if (raw.key.remoteJid === 'status@broadcast' || raw.key.remoteJid.endsWith('@newsletter')) return
-    if (raw.message.protocolMessage || raw.message.senderKeyDistributionMessage) return
+    if (raw.message.protocolMessage) return this.moderation.handleProtocol(sock, raw)
+    if (raw.message.senderKeyDistributionMessage) return
 
     const config = this.configStore.data
     const m = await serializeMessage(sock, raw, config)
-    if (!m.chat || (!m.text && !m.selectionId)) return
+    if (!m.chat) return
+    this.moderation.remember(m)
+    if (m.isGroup && this.moderation.hasRules(m.chat)) {
+      const enforced = await this.moderation.enforce(sock, m, () => this.#groupContext(sock, m))
+      if (enforced) return
+    }
+    if (!m.text && !m.selectionId) return
 
     this.database.touchMessage(m)
     if (config.autoRead && !m.fromMe) {
@@ -37,7 +47,8 @@ export class MessageHandler {
 
     const plugin = this.registry.get(parsed.command)
     if (!plugin) return
-    if (config.mode === 'self' && !m.isOwner) return
+    const isMod = hasModIdentity(m.identities, config)
+    if (config.mode === 'self' && !m.isOwner && !isMod) return
 
     const cooldownKey = `${m.senderDisplay}:${parsed.command}`
     const now = Date.now()
@@ -50,10 +61,12 @@ export class MessageHandler {
         group = await this.#groupContext(sock, m)
       }
 
-      if (plugin.owner && !m.isOwner) return this.#deny(sock, m, 'Este comando es sólo para owners.')
+      if (plugin.owner && !m.isOwner && !(plugin.mod && isMod)) {
+        return this.#deny(sock, m, 'Este comando es sólo para owners o moderadores autorizados.')
+      }
       if (plugin.group && !m.isGroup) return this.#deny(sock, m, 'Este comando sólo funciona en grupos.')
       if (plugin.private && m.isGroup) return this.#deny(sock, m, 'Usa este comando en el privado del bot.')
-      if (plugin.admin && !m.isOwner && !group.isAdmin) {
+      if (plugin.admin && !m.isOwner && !isMod && !group.isAdmin) {
         return this.#deny(sock, m, 'Necesitas ser administrador del grupo.')
       }
       if (plugin.botAdmin && !group.isBotAdmin) {
@@ -97,6 +110,7 @@ export class MessageHandler {
       text: parsed.text,
       usedPrefix: parsed.usedPrefix,
       isOwner: m.isOwner,
+      isMod,
       isGroup: m.isGroup,
       isAdmin: group.isAdmin,
       isBotAdmin: group.isBotAdmin,

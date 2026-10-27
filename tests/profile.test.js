@@ -79,6 +79,20 @@ test('birthdays filtra el día y allbirthdays conserva el calendario', async () 
   assert.match(replies[1].message, /Otro/)
 })
 
+test('setage, marry y divorce actualizan ambos perfiles', async () => {
+  const { ctx } = makeContext({ [sender]: {}, [target]: {} })
+  ctx.args = ['22']
+  await plugin('setage').execute(ctx)
+  assert.equal(ctx.db.data.users[sender].age, 22)
+  ctx.m.mentionedJid = [target]
+  await plugin('marry').execute(ctx)
+  assert.equal(ctx.db.data.users[sender].spouse, target)
+  assert.equal(ctx.db.data.users[target].spouse, sender)
+  await plugin('divorce').execute(ctx)
+  assert.equal(ctx.db.data.users[sender].spouse, undefined)
+  assert.equal(ctx.db.data.users[target].spouse, undefined)
+})
+
 test('touchMessage respeta el nombre personalizado del perfil', () => {
   const db = new Database()
   db.scheduleSave = () => {}

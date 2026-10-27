@@ -16,7 +16,9 @@ import { ConfigStore } from './src/config.js'
 import { Database } from './src/database.js'
 import { MessageHandler } from './src/handler.js'
 import { PluginRegistry } from './src/plugins.js'
+import { SubbotManager } from './src/subbots.js'
 import { cleanNumber } from './src/utils/format.js'
+import { registerWelcome } from './src/utils/welcome.js'
 
 const [major, minor] = process.versions.node.split('.').map(Number)
 if (major < 20 || (major === 20 && minor < 9)) {
@@ -93,6 +95,8 @@ async function connect() {
       }
     }
   })
+
+  registerWelcome(current, database)
 
   current.ev.on('connection.update', update => {
     if (current !== sock) return
@@ -201,6 +205,7 @@ async function shutdown(code = 0) {
   try {
     await database.save()
     await configStore.close()
+    await runtime.subbots?.stopAll()
     sock?.end?.(new Error('Velirius Bot detenido'))
   } catch (error) {
     console.error(`⚠ Error al cerrar: ${error.message}`)
@@ -215,6 +220,11 @@ async function main() {
   await configStore.init()
   await registry.load()
   await database.init()
+  runtime.subbots = new SubbotManager({
+    handler,
+    sessionDir: configStore.data.sessionDir,
+    logLevel: configStore.data.logLevel,
+  })
 
   const sessionDir = path.resolve(configStore.data.sessionDir)
   await mkdir(sessionDir, { recursive: true, mode: 0o700 })

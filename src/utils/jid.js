@@ -86,3 +86,8 @@ export function hasOwnerIdentity(identities = [], config, fromMe = false) {
     return owners.has(jid) || ownerNumbers.has(cleanNumber(jid))
   })
 }
+
+export function hasModIdentity(identities = [], config) {
+  const mods = new Set((config.mods || []).map(cleanNumber).filter(Boolean))
+  return identities.some(identity => mods.has(cleanNumber(identity)))
+}

@@ -10,7 +10,9 @@ import {
   textOrQuoted,
   textWithoutUrls,
 } from '../src/utils/canvas.js'
-import { mediaPayload } from '../src/utils/media.js'
+import { cleanNumber, isHttpUrl } from '../src/utils/format.js'
+import { downloadMessageMedia, mediaPayload } from '../src/utils/media.js'
+import { stickerToImage } from '../src/utils/sticker.js'
 
 function pairCanvas(id, description) {
   return {
@@ -19,15 +21,19 @@ function pairCanvas(id, description) {
     description,
     usage: '<nombre 1> | <nombre 2> [|%] [|texto]',
     async execute(ctx) {
-      const [name1, name2, percentage, ...rest] = parts(ctx.text)
+      const targets = ctx.m.mentionedJid || []
+      const first = targets[0] || ctx.m.sender
+      const second = targets[1] || ctx.m.quoted?.sender || ctx.m.sender
+      const [rawName1, rawName2, percentage, ...rest] = parts(ctx.text)
+      const name1 = rawName1 || cleanNumber(first)
+      const name2 = rawName2 || cleanNumber(second)
       if (!name1 || !name2) {
         return ctx.reply(`☾ Uso: ${ctx.usedPrefix}${id} Luna | Sol | 95 | Mejores amigos`)
       }
       await ctx.react('🌙')
-      const target = ctx.m.mentions[0] || ctx.m.quoted?.sender
       const [image1, image2] = await Promise.all([
-        profileInput(ctx, ctx.m.sender),
-        target ? profileInput(ctx, target) : null,
+        profileInput(ctx, first),
+        second ? profileInput(ctx, second) : null,
       ])
       return sendCanvas(ctx, id, {
         params: { name1, name2, percentage, text: rest.join(' | ') || undefined },
@@ -228,13 +234,24 @@ export default [
     description: 'Redimensiona una imagen con Sharp',
     usage: '[ancho] [alto] (respondiendo a una imagen)',
     async execute(ctx) {
-      const source = await imageInput(ctx, { required: true })
       const args = argsWithoutUrls(ctx)
-      const width = args[0] ? Number(args[0]) : 512
-      const height = args[1] ? Number(args[1]) : (args[0] ? undefined : 512)
+      const dimensions = args.find(arg => /^\d+x\d+$/i.test(arg))
+      const numbers = dimensions ? dimensions.split(/x/i).map(Number) : []
+      const width = dimensions ? numbers[0] : args[0] ? Number(args[0]) : 512
+      const height = dimensions ? numbers[1] : args[1] ? Number(args[1]) : (args[0] ? undefined : 512)
       if ((width !== undefined && (!Number.isInteger(width) || width < 1 || width > 4096)) ||
           (height !== undefined && (!Number.isInteger(height) || height < 1 || height > 4096))) {
         return ctx.reply('☾ El ancho y el alto deben ser enteros entre 1 y 4096.')
+      }
+      let source
+      const url = ctx.args.find(isHttpUrl)
+      if (url) source = { url }
+      else {
+        const input = await downloadMessageMedia(ctx.m, { types: ['image', 'sticker'], maxBytes: 12 * 1024 * 1024 })
+        if (!input) return ctx.reply(`☾ Responde a una imagen o sticker con *${ctx.usedPrefix}resize 800x600*.`)
+        const buffer = input.type === 'sticker' ? await stickerToImage(input.buffer) : input.buffer
+        const mimetype = input.type === 'sticker' ? 'image/png' : input.mimetype
+        source = { data: `data:${mimetype};base64,${buffer.toString('base64')}`, mimetype }
       }
       await ctx.react('🌙')
       const media = await requestWithImages(ctx, '/tools/resize', {

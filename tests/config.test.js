@@ -6,8 +6,10 @@ import path from 'node:path'
 import { ConfigStore, DEFAULT_CONFIG, normalizeConfig } from '../src/config.js'
 
 test('normaliza configuración y conserva owner Lyann', () => {
-  const config = normalizeConfig({ ...DEFAULT_CONFIG, prefix: '!', api: { baseUrl: 'https://example.com/' } })
+  const config = normalizeConfig({ ...DEFAULT_CONFIG, prefix: '!', language: 'pt', mods: ['59822222222'], api: { baseUrl: 'https://example.com/' } })
   assert.equal(config.prefix, '!')
+  assert.equal(config.language, 'pt')
+  assert.deepEqual(config.mods, ['59822222222'])
   assert.equal(config.api.baseUrl, 'https://example.com')
   assert.equal(config.owners[0].name, 'Lyann')
   assert.equal(config.api.timeoutMs, DEFAULT_CONFIG.api.timeoutMs)
@@ -18,6 +20,7 @@ test('rechaza configuraciones inseguras o inválidas', () => {
   assert.throws(() => normalizeConfig({ ...DEFAULT_CONFIG, owners: [], ownerLids: [] }), /al menos un owner/)
   assert.throws(() => normalizeConfig({ ...DEFAULT_CONFIG, api: { baseUrl: 'file:///tmp/config' } }), /HTTP o HTTPS/)
   assert.throws(() => normalizeConfig({ ...DEFAULT_CONFIG, menuMode: 'otro' }), /menuMode/)
+  assert.throws(() => normalizeConfig({ ...DEFAULT_CONFIG, language: 'xx' }), /language/)
 })
 
 test('guarda cambios de forma persistente y atómica', async t => {

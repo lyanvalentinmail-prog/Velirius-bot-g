@@ -1,4 +1,5 @@
-import { firstDefined, truncate } from '../src/utils/format.js'
+import { firstDefined, isHttpUrl, truncate } from '../src/utils/format.js'
+import { mediaPayload } from '../src/utils/media.js'
 
 function resultsOf(result) {
   if (Array.isArray(result)) return result
@@ -28,7 +29,7 @@ function formatResults(result, kind) {
   }).join('\n\n')
 }
 
-async function search(ctx, route) {
+export async function search(ctx, route) {
   if (!ctx.text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}${ctx.command} ${ctx.plugin.usage}`)
   await ctx.react('🔎')
   const result = await ctx.api.json(route, { query: ctx.text, limit: 5, lang: 'es' })
@@ -70,7 +71,12 @@ export default [
     description: 'Busca y envía tres imágenes de Pinterest.',
     usage: '<búsqueda>',
     async execute(ctx) {
-      if (!ctx.text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}pinterest <búsqueda>`)
+      if (!ctx.text) return ctx.reply(`☾ Uso: ${ctx.usedPrefix}pinterest <búsqueda o URL>`)
+      if (isHttpUrl(ctx.text)) {
+        await ctx.react('⏳')
+        const media = await ctx.api.media('/downloader/pinterest', { url: ctx.text, direct: 'true' })
+        return ctx.send(mediaPayload(media, 'auto', `☾ ${ctx.config.botName}`))
+      }
       await ctx.react('📌')
       const result = await ctx.api.json('/searcher/pinterest', { query: ctx.text, limit: 3 })
       const items = resultsOf(result).slice(0, 3)

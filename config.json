@@ -8,6 +8,8 @@
     }
   ],
   "ownerLids": [],
+  "mods": [],
+  "language": "es",
   "banner": "./assets/banner.jpg",
   "menuMode": "interactive",
   "mode": "public",
