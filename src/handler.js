@@ -73,7 +73,7 @@ export class MessageHandler {
         return this.#deny(sock, m, 'El bot necesita ser administrador del grupo.')
       }
 
-      const ctx = this.#createContext(sock, m, plugin, parsed, group, config)
+      const ctx = this.#createContext(sock, m, plugin, parsed, group, config, isMod)
       this.database.trackCommand(m, plugin.commands[0])
       await plugin.execute(ctx)
     } catch (error) {
@@ -89,7 +89,7 @@ export class MessageHandler {
     return value
   }
 
-  #createContext(sock, m, plugin, parsed, group, config) {
+  #createContext(sock, m, plugin, parsed, group, config, isMod) {
     const send = (content, options = {}) => sock.sendMessage(m.chat, content, { quoted: m.raw, ...options })
     const reply = (text, extra = {}) => send({ text: truncate(text, 60000), ...extra })
     return {
