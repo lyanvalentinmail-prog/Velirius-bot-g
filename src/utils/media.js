@@ -30,7 +30,7 @@ export async function downloadMessageMedia(m, {
     let total = 0
     for await (const chunk of stream) {
       total += chunk.length
-      if (total > maxBytes) throw new Error(`La imagen supera el límite de ${Math.round(maxBytes / 1024 / 1024)} MB`)
+      if (total > maxBytes) throw new Error(`El archivo supera el límite de ${Math.round(maxBytes / 1024 / 1024)} MB`)
       chunks.push(chunk)
     }
     return {

@@ -22,6 +22,7 @@
     "@whiskeysockets/baileys": "7.0.0-rc14",
     "pino": "^9.6.0",
     "qrcode-terminal": "^0.12.0",
+    "node-webpmux": "3.2.1",
     "sharp": "0.35.5"
   },
   "optionalDependencies": {

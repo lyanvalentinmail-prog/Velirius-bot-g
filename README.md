@@ -2,7 +2,7 @@
 
 Bot modular de **WhatsApp Multi Device**, pensado para **Termux**, construido con **Baileys** y los endpoints públicos de **[Velirius API](https://velirius-api-sd8u.vercel.app/home)**.
 
-Incluye vinculación por **código QR** o **código de emparejamiento**, menú con banner, listas interactivas (`nativeFlow`), listas clásicas (`listMessage`) y alternativa automática en texto. Su estructura de plugins está inspirada en bots como Pain-Bot, pero el proyecto es independiente y delega la edición multimedia compleja en Velirius API.
+Incluye vinculación por **código QR** o **código de emparejamiento**, menú con banner, listas interactivas (`nativeFlow`), listas clásicas (`listMessage`) y alternativa automática en texto. Su estructura de plugins está inspirada en bots como Pain-Bot, pero el proyecto es independiente: utiliza Velirius API para generadores y descargas, y procesa stickers localmente con Sharp y FFmpeg.
 
 ## Características
 
@@ -11,9 +11,10 @@ Incluye vinculación por **código QR** o **código de emparejamiento**, menú c
 - Asistente de configuración para Termux: `npm run setup`.
 - Permisos compatibles con números normales (`PN`) e identificadores `@lid`.
 - Menú generado automáticamente desde los plugins cargados.
-- 86 comandos iniciales y más de 170 alias.
-- Descargas, búsquedas, anime, canvas, herramientas, 26 reacciones y administración de grupos.
-- Base de datos JSON local para actividad y estadísticas.
+- 135 comandos y 256 claves/alias, organizados en 12 categorías.
+- Descargas, búsquedas, anime, 19 canvas, 16 efectos, herramientas y 26 reacciones.
+- 14 generadores de stickers y 4 editores locales con metadata personalizable.
+- Base de datos JSON local para actividad, estadísticas y packs de stickers.
 - Cooldown, modo público/privado y límite de tamaño para descargas.
 - Reconexión automática y script con reinicio del proceso.
 - Sin token para Velirius API.
@@ -29,13 +30,13 @@ cd Velirius-bot-g
 bash scripts/install-termux.sh
 ```
 
-El instalador ejecuta `pkg update`, instala Node.js, Git y Nano, instala las dependencias con `npm ci` y comprueba el soporte de imágenes de Baileys. En Android, si `sharp` no tiene binario nativo, se prepara automáticamente su variante WebAssembly.
+El instalador ejecuta `pkg update`, instala Node.js, Git, Nano y FFmpeg, instala las dependencias con `npm ci` y comprueba el soporte de imágenes de Baileys. En Android, si `sharp` no tiene binario nativo, se prepara automáticamente su variante WebAssembly. FFmpeg es necesario para stickers animados y conversiones de video.
 
 ### Instalación manual completa
 
 ```bash
 pkg update -y
-pkg install -y nodejs git nano
+pkg install -y nodejs git nano ffmpeg
 
 git clone https://github.com/lyanvalentinmail-prog/Velirius-bot-g.git
 cd Velirius-bot-g
@@ -167,7 +168,7 @@ El modo predeterminado es `interactive`: envía banner y un botón de selección
 - `list`: mensaje `listMessage` clásico.
 - `text`: banner y comandos en texto, sin elementos interactivos.
 
-Los dos modos de lista incorporan los nodos `biz` requeridos por WhatsApp. Al seleccionar una categoría, el bot interpreta su ID y devuelve los comandos correspondientes.
+Los dos modos de lista incorporan los nodos `biz` requeridos por WhatsApp. Las 12 categorías se reparten en secciones de máximo 10 filas para respetar los límites de WhatsApp. Al seleccionar una categoría, el bot interpreta su ID y devuelve los comandos correspondientes.
 
 La visualización final depende de la versión de WhatsApp. Si una lista no aparece en un cliente, el bot intenta otras formas de envío; también puedes forzar `.setmenu texto`.
 
@@ -209,23 +210,81 @@ El menú completo se obtiene con `.menu` (o con el prefijo que hayas configurado
 
 Descarga únicamente contenido que tengas permiso para guardar o compartir. Los proveedores pueden bloquear algunos enlaces; en ese caso la API devolverá el error correspondiente.
 
-### Herramientas y canvas
+### Tools
 
 ```text
 .calc (2+3)*4^2 + sqrt(81)
 .traducir en Hola, ¿cómo estás?
 .tts es Hola, soy Velirius Bot
+.stt https://ejemplo.com/audio.ogg
+.stt en
 .morse SOS
 .morse decode ... --- ...
-.brat Velirius Bot
-.bratvideo Palabras progresivas
-.ttp VELIRIUS
-.quotly Hola a todos
-.emojimix 😀 😂
 .resize 512 512
 ```
 
-`quotly` y `resize` aceptan una imagen respondida. Las imágenes se suben temporalmente a `/upload` de Velirius API para generar el canvas; el servicio indica que estas subidas expiran a los 30 minutos.
+Para `.stt en`, responde a un audio o nota de voz; el idioma es opcional y por defecto es `es`. La transcripción depende de que Velirius API tenga configurado un proveedor STT. Para `.resize`, responde a una imagen o indica una URL.
+
+### Stickers maker
+
+```text
+.brat Velirius Bot
+.bratvideo Palabras progresivas
+.bratestirado VELIRIUS
+.bratanime VELIRIUS
+.bratcoyote VELIRIUS
+.bratpinguino VELIRIUS
+.attp VELIRIUS
+.ttp VELIRIUS
+.absolutecinema VELIRIUS
+.bobesponja VELIRIUS
+.bobesponja2 VELIRIUS
+.bobesponja3 VELIRIUS
+.cartelboy VELIRIUS
+.emojimix 😀 😂
+```
+
+`bratvideo` y `attp` requieren FFmpeg. Los demás generadores estáticos se convierten a WebP con Sharp.
+
+### Stickers editor
+
+```text
+.pack Mi Pack | Lyann
+.sticker
+.toimg
+.tovid
+.pack reset
+```
+
+Responde a una imagen o video corto con `.sticker`, y a un sticker con `.toimg` o `.tovid`. La metadata de `.pack` se guarda por usuario y se aplica también a los stickers creados con la API. Las conversiones de video usan FFmpeg.
+
+### Canvas y effects
+
+```text
+.quotly Hola a todos
+.iqc Hola a todos
+.iqcblue Hola
+.iqcpink Hola
+.messengerquote Hola
+.profilenote Mi nota
+.pov Cuando el bot responde
+.x Mi publicación
+.cuentatiktok velirius | En línea
+.storyreply ¡Qué buena foto!
+.canvaimagen
+.laptop
+.pc
+.googleimg
+.searched Velirius
+.pokemoncard Velirius | 120 | Rayo | 40 | Carta personalizada
+.ship Luna | Sol | 95
+.friendship Luna | Sol | 100 | Mejores amigos
+.gaycard Lyann | 100
+```
+
+Para los comandos que usan una imagen, responde a una o agrega su URL. `.google` sigue siendo la búsqueda web; `.googleimg` es el canvas de Google. Las imágenes respondidas se envían directamente por `POST` a Velirius API, sin depender de URLs temporales.
+
+Los 16 efectos son `gay`, `invert`, `grayscale`, `blur`, `pixel`, `deepfry`, `sketch`, `swirl`, `liquify`, `glitch`, `rata`, `banana`, `arandano`, `pan`, `galletita` y `minions`. Consulta sus parámetros opcionales con `.menu effects`.
 
 ### Anime y reacciones
 
@@ -256,7 +315,6 @@ Incluye `kick`, `add`, `promote`, `demote`, `open`, `close`, `setgroupname`, `se
 - `/reactions/*`
 - `/searcher/*`
 - `/tools/*`
-- `/upload`
 - `/docs` para comprobar el estado
 
 La URL se puede cambiar con `setapi` o en `config.json`. No se necesita token.
@@ -321,7 +379,7 @@ npm run check
 npm test
 ```
 
-`check` valida sintaxis, configuración, banner y duplicados de comandos. Las pruebas cubren configuración, mensajes, listas, API, menú y carga de plugins; no inician una sesión real de WhatsApp.
+`check` valida sintaxis, configuración, banner, los 135 comandos y duplicados de alias. Las pruebas cubren configuración, mensajes, listas, API, menú, canvas, STT y stickers; no inician una sesión real de WhatsApp.
 
 ## Solución de problemas
 
@@ -353,7 +411,11 @@ El arranque intenta corregirlo automáticamente. Para repetir la comprobación m
 npm run fix:sharp
 ```
 
-El bot puede continuar sin Sharp, pero algunas miniaturas de imagen o video podrían no generarse.
+Sin Sharp pueden fallar las miniaturas y los comandos locales de stickers; por eso el arranque intenta preparar también el respaldo WASM.
+
+### FFmpeg no está instalado
+
+En Termux ejecuta `pkg install ffmpeg` y reinicia el bot. Los stickers de imagen estática no necesitan FFmpeg, pero `sticker` con video, `bratvideo`, `attp` y `tovid` sí lo utilizan.
 
 ### Actualizar el proyecto
 
