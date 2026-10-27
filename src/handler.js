@@ -2,6 +2,7 @@ import { VeliriusAPI, ApiError, MediaTooLargeError } from './api.js'
 import { categoryFromSelection } from './menu.js'
 import { ModerationEngine } from './moderation.js'
 import { errorMessage, truncate } from './utils/format.js'
+import { addPendingMedia } from './utils/media.js'
 import { groupContext } from './utils/group.js'
 import { hasModIdentity } from './utils/jid.js'
 import { parseCommandText, serializeMessage } from './utils/messages.js'
@@ -32,6 +33,11 @@ export class MessageHandler {
       const enforced = await this.moderation.enforce(sock, m, () => this.#groupContext(sock, m))
       if (enforced) return
     }
+    // Almacena imágenes entrantes para que .pack add pueda procesar álbumes
+    if (m.msgType === 'imageMessage') {
+      addPendingMedia(m.chat, m.sender, raw)
+    }
+
     if (!m.text && !m.selectionId) return
 
     this.database.touchMessage(m)

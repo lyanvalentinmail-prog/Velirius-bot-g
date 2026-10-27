@@ -1,4 +1,4 @@
-import { downloadMessageMedia } from '../src/utils/media.js'
+import { downloadMessageMedia, getPendingMedia } from '../src/utils/media.js'
 import {
   createSticker,
   imageToSticker,
@@ -97,38 +97,75 @@ export default [
       const text = ctx.text.trim()
       const action = text.toLowerCase()
       const prefix = ctx.usedPrefix
-      const usage = `☾ Usa ${prefix}pack nombre,autor para iniciar un paquete.`
+      const usage = `📦 ☾ Usa ${prefix}pack nombre,autor para iniciar un paquete.`
 
       if (action === 'cancel') {
-        if (!session) return ctx.reply('☾ No tienes un paquete en curso.')
-        if (session.busy) return ctx.reply('☾ Espera a que termine la operación actual y vuelve a cancelar.')
+        if (!session) return ctx.reply(`📦 ☾ No tienes un paquete en curso.`)
+        if (session.busy) return ctx.reply(`📦 ☾ Espera a que termine la operación actual y vuelve a cancelar.`)
         clearPackSession(key)
-        return ctx.reply('☾ Paquete cancelado; se descartaron sus imágenes.')
+        return ctx.reply(`📦 ☾ Paquete cancelado; se descartaron sus imágenes.`)
       }
-      if (session?.busy) return ctx.reply('☾ Ya hay una operación en curso para este paquete. Inténtalo de nuevo en un momento.')
+      if (session?.busy) return ctx.reply(`📦 ☾ Ya hay una operación en curso para este paquete. Inténtalo de nuevo en un momento.`)
 
       if (action === 'add') {
-        if (!session) return ctx.reply(`☾ Primero inicia un paquete con ${prefix}pack nombre,autor.`)
+        if (!session) return ctx.reply(`📦 ☾ Primero inicia un paquete con ${prefix}pack nombre,autor.`)
         if (session.stickers.length >= MAX_PACK_STICKERS) {
-          return ctx.reply(`☾ El paquete ya tiene el máximo de ${MAX_PACK_STICKERS} imágenes. Usa ${prefix}pack done.`)
+          return ctx.reply(`📦 ☾ El paquete ya tiene el máximo de ${MAX_PACK_STICKERS} imágenes. Usa ${prefix}pack done.`)
         }
         session.busy = true
         try {
           const download = ctx.downloadMedia || downloadMessageMedia
-          const media = await download(ctx.m, {
-            types: ['image'],
-            maxBytes: MAX_MEDIA_BYTES,
-          })
-          if (!media) return ctx.reply(`☾ Responde a una foto con ${prefix}pack add o envía la foto con ese comando.`)
-          const sticker = await imageToSticker(media.buffer, {
-            packName: session.name,
-            packAuthor: session.author,
-          })
+          const mediaList = []
+
+          // 1) Responder a una foto concreta
+          if (ctx.m.quoted?.message?.imageMessage) {
+            const media = await download(ctx.m, {
+              types: ['image'],
+              maxBytes: MAX_MEDIA_BYTES,
+            })
+            if (media) mediaList.push(media)
+          }
+
+          // 2) Fotos pendientes de un álbum (varias imágenes enviadas seguidas)
+          if (mediaList.length === 0) {
+            const pending = getPendingMedia(ctx.m.chat, ctx.m.sender)
+            for (const raw of pending) {
+              const media = await downloadMessageMedia(raw, {
+                types: ['image'],
+                maxBytes: MAX_MEDIA_BYTES,
+              })
+              if (media) mediaList.push(media)
+            }
+          }
+
+          // 3) Imagen del mensaje actual sin quoted (respuesta directa al comando)
+          if (mediaList.length === 0) {
+            const media = await download(ctx.m, {
+              types: ['image'],
+              maxBytes: MAX_MEDIA_BYTES,
+            })
+            if (media) mediaList.push(media)
+          }
+
+          if (mediaList.length === 0) {
+            return ctx.reply(`📦 ☾ Responde a una foto con ${prefix}pack add o envía varias fotos de un álbum con ese comando.`)
+          }
+
+          let added = 0
+          for (const media of mediaList) {
+            if (session.stickers.length >= MAX_PACK_STICKERS) break
+            const sticker = await imageToSticker(media.buffer, {
+              packName: session.name,
+              packAuthor: session.author,
+            })
+            session.stickers.push(sticker)
+            added += 1
+          }
+
           if (packSessions.get(key) !== session) return
-          session.stickers.push(sticker)
           touchPackSession(key, session)
           return await ctx.reply(
-            `☾ Imagen agregada (${session.stickers.length}/${MAX_PACK_STICKERS}).\n` +
+            `📦 ☾ ${added} imagen${added !== 1 ? 'es' : ''} agregada${added !== 1 ? 's' : ''} (${session.stickers.length}/${MAX_PACK_STICKERS}).\n` +
             `Agrega otra con ${prefix}pack add o termina con ${prefix}pack done.`,
           )
         } finally {
@@ -138,8 +175,8 @@ export default [
       }
 
       if (action === 'done') {
-        if (!session) return ctx.reply('☾ No tienes un paquete en curso.')
-        if (!session.stickers.length) return ctx.reply(`☾ Agrega al menos una foto con ${prefix}pack add.`)
+        if (!session) return ctx.reply('📦 ☾ No tienes un paquete en curso.')
+        if (!session.stickers.length) return ctx.reply(`📦 ☾ Agrega al menos una foto con ${prefix}pack add.`)
         session.busy = true
         try {
           await sendStickerPack(ctx, {
@@ -158,7 +195,7 @@ export default [
       if (!text) {
         if (session) {
           return ctx.reply(
-            `☾ Paquete *${session.name}* de *${session.author}*: ${session.stickers.length}/${MAX_PACK_STICKERS} imágenes.\n` +
+            `📦 ☾ Paquete *${session.name}* de *${session.author}*: ${session.stickers.length}/${MAX_PACK_STICKERS} imágenes.\n` +
             `Usa ${prefix}pack add, ${prefix}pack done o ${prefix}pack cancel.`,
           )
         }
@@ -166,9 +203,9 @@ export default [
       }
 
       if (session) {
-        return ctx.reply(`☾ Ya tienes un paquete en curso. Usa ${prefix}pack done para enviarlo o ${prefix}pack cancel para descartarlo.`)
+        return ctx.reply(`📦 ☾ Ya tienes un paquete en curso. Usa ${prefix}pack done para enviarlo o ${prefix}pack cancel para descartarlo.`)
       }
-      if (text.length > 200) return ctx.reply('☾ El nombre del paquete y el autor no pueden superar 200 caracteres en total.')
+      if (text.length > 200) return ctx.reply(`📦 ☾ El nombre del paquete y el autor no pueden superar 200 caracteres en total.`)
       let separator = text.indexOf(',')
       if (separator < 1) separator = text.indexOf('.')
       if (separator < 1) return ctx.reply(usage)
@@ -180,7 +217,7 @@ export default [
       packSessions.set(key, created)
       touchPackSession(key, created)
       return ctx.reply(
-        `☾ Paquete *${name}* de *${author}* iniciado.\n` +
+        `📦 ☾ Paquete *${name}* de *${author}* iniciado.\n` +
         `Agrega fotos con ${prefix}pack add, envíalo con ${prefix}pack done o cancélalo con ${prefix}pack cancel.`,
       )
     },
