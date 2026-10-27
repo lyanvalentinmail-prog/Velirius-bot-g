@@ -8,6 +8,33 @@ const MEDIA_TYPES = {
   documentMessage: 'document',
 }
 
+// Buffer temporal de imágenes recibidas (álbumes) por chat + remitente.
+// Permite que .pack add procese varias fotos de un álbum en una sola ejecución.
+const PENDING_MEDIA_TTL = 60 * 1000
+export const pendingMedia = new Map()
+
+export function addPendingMedia(chatId, senderId, rawMessage) {
+  const key = `${chatId}:${senderId}`
+  let entries = pendingMedia.get(key)
+  if (!entries) {
+    entries = []
+    pendingMedia.set(key, entries)
+    setTimeout(() => {
+      if (pendingMedia.get(key) === entries) pendingMedia.delete(key)
+    }, PENDING_MEDIA_TTL).unref?.()
+  }
+  entries.push(rawMessage)
+  return entries
+}
+
+export function getPendingMedia(chatId, senderId) {
+  const key = `${chatId}:${senderId}`
+  const entries = pendingMedia.get(key)
+  if (!entries) return []
+  pendingMedia.delete(key)
+  return entries
+}
+
 export function locateMedia(message) {
   if (!message) return null
   for (const [key, type] of Object.entries(MEDIA_TYPES)) {
